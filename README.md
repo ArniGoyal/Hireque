@@ -1,3 +1,3 @@
-# Welcome to your Lovable project
+# HireQue
 
-TODO: Document your project here
+Campus Placement Management System
