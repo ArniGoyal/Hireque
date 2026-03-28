@@ -58,7 +58,7 @@ function AppSidebar({ role }: { role: string }) {
         <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0">
           <GraduationCap className="w-4 h-4 text-sidebar-primary-foreground" />
         </div>
-        {!collapsed && <span className="font-serif font-bold text-sidebar-foreground">PlaceHub</span>}
+        {!collapsed && <span className="font-serif font-bold text-sidebar-foreground">Hireque</span>}
       </div>
       <SidebarContent>
         <SidebarGroup>

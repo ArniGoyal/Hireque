@@ -7,6 +7,10 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import StudentDashboard from "./pages/dashboard/StudentDashboard";
+import StudentProfile from "./pages/dashboard/StudentProfile";
+import StudentJobs from "./pages/dashboard/StudentJobs";
+import StudentApplications from "./pages/dashboard/StudentApplications";
+import StudentInterviews from "./pages/dashboard/StudentInterviews";
 import RecruiterDashboard from "./pages/dashboard/RecruiterDashboard";
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import NotFound from "./pages/NotFound";
@@ -23,7 +27,15 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/dashboard/student/*" element={<StudentDashboard />} />
+          
+          {/* Student Routes */}
+          <Route path="/dashboard/student" element={<StudentDashboard />} />
+          <Route path="/dashboard/student/profile" element={<StudentProfile />} />
+          <Route path="/dashboard/student/jobs" element={<StudentJobs />} />
+          <Route path="/dashboard/student/applications" element={<StudentApplications />} />
+          <Route path="/dashboard/student/interviews" element={<StudentInterviews />} />
+
+          {/* Recruiter & Admin Routes */}
           <Route path="/dashboard/recruiter/*" element={<RecruiterDashboard />} />
           <Route path="/dashboard/admin/*" element={<AdminDashboard />} />
           <Route path="*" element={<NotFound />} />

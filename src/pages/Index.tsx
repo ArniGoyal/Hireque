@@ -1,319 +1,347 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, Building2, ShieldCheck, ArrowRight, BarChart3, Users, Briefcase, TrendingUp, Sparkles, Star } from "lucide-react";
+import { 
+  Zap, 
+  Building2, 
+  ShieldCheck, 
+  ArrowRight, 
+  BarChart3, 
+  Users, 
+  TrendingUp, 
+  Star,
+  Globe,
+  Award,
+  CheckCircle,
+} from "lucide-react";
 import { useRef } from "react";
+import { Badge } from "@/components/ui/badge";
 
 const features = [
   {
-    icon: GraduationCap,
-    title: "Student Portal",
-    description: "Build your profile, upload resume, browse & apply to top companies, and track your applications.",
-    accent: "from-accent/20 to-accent/5",
+    icon: Users,
+    title: "Smart Eligibility Filter",
+    description: "Automated CGPA and skill-based matching. Students never waste time on roles they aren't perfectly qualified for.",
   },
   {
-    icon: Building2,
-    title: "Recruiter Hub",
-    description: "Post openings, set eligibility criteria, shortlist candidates, and schedule interviews seamlessly.",
-    accent: "from-primary/20 to-primary/5",
+    icon: Zap,
+    title: "AI Resume Intelligence",
+    description: "Instantly parse, score out of 100, and receive actionable OpenAI feedback on student resumes.",
   },
   {
     icon: ShieldCheck,
-    title: "Admin Control",
-    description: "Full oversight — manage students, companies, postings, and view real-time placement analytics.",
-    accent: "from-info/20 to-info/5",
+    title: "Unified Ecosystem",
+    description: "Distinct interfaces for Students to apply, Recruiters to shortlist, and Admins to govern the pipeline.",
   },
 ];
 
 const stats = [
-  { icon: Users, value: "5,200+", label: "Students Registered" },
-  { icon: Briefcase, value: "340+", label: "Companies Partnered" },
-  { icon: TrendingUp, value: "92%", label: "Placement Rate" },
-  { icon: BarChart3, value: "₹18 LPA", label: "Avg Package" },
+  { icon: Users, value: "8,500+", label: "Total Students Placed" },
+  { icon: Building2, value: "340+", label: "Companies Visiting" },
+  { icon: Award, value: "98.4%", label: "Placement Percentage" },
+  { icon: BarChart3, value: "₹28 LPA", label: "Highest Package" },
 ];
 
 const testimonials = [
-  { name: "Priya Sharma", role: "CSE '25 — Placed at Google", text: "PlaceHub made my placement journey incredibly smooth. I got 3 offers within a month!" },
-  { name: "Arjun Mehta", role: "IT '25 — Placed at Microsoft", text: "The application tracking and interview scheduling features saved me so much time." },
-  { name: "Dr. Rajan Verma", role: "Placement Director", text: "Managing 5000+ students across companies has never been this effortless." },
+  { name: "Priya Sharma", role: "SDE @ Google", avatar: "PS", text: "Hireque transformed my placement journey. The AI matching was spot-on!" },
+  { name: "Arjun Mehta", role: "DevOps @ Microsoft", avatar: "AM", text: "I landed my dream role within 2 weeks of joining. High velocity indeed." },
+  { name: "Dr. Rajan Verma", role: "University Director", avatar: "RV", text: "Managing placement for 5000+ students became a breeze with these analytics." },
 ];
 
-const container = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.12 } },
-};
-
 const fadeUp = {
-  hidden: { opacity: 0, y: 40 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] as const } },
-};
-
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.9 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as const } },
+  hidden: { opacity: 0, y: 15 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
 };
 
 const Index = () => {
   const heroRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
-  const heroY = useTransform(scrollYProgress, [0, 1], [0, 100]);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
-
+  
   return (
-    <div className="min-h-screen bg-background overflow-hidden">
-      {/* Navbar */}
+    <div className="min-h-screen bg-background text-foreground overflow-x-hidden selection:bg-primary selection:text-white font-sans">
+      {/* Modern Floating Header - Balanced Scale */}
       <motion.nav
-        initial={{ y: -20, opacity: 0 }}
+        initial={{ y: -10, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        className="fixed top-0 left-0 right-0 z-50 glass"
+        className="fixed top-6 left-0 right-0 z-50 flex justify-center pointer-events-none px-6"
       >
-        <div className="container mx-auto flex items-center justify-between h-16 px-4">
-          <Link to="/" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
-              <GraduationCap className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="text-lg font-serif font-bold text-foreground tracking-tight">PlaceHub</span>
+        <div className="w-full max-w-5xl bg-white/95 backdrop-blur-md border border-primary/5 shadow-xl rounded-full px-10 py-3 flex items-center justify-between pointer-events-auto">
+          <Link to="/" className="flex items-center gap-2 group">
+             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center transition-transform group-hover:rotate-6">
+                <Zap className="w-4.5 h-4.5 text-white fill-current" />
+             </div>
+             <span className="font-extrabold text-xl tracking-tighter text-primary font-serif">Hireque</span>
           </Link>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" asChild className="font-medium">
-              <Link to="/login">Log in</Link>
-            </Button>
-            <Button asChild className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20">
+
+          <div className="hidden lg:flex items-center gap-10">
+            {[
+              { name: 'Home', href: '#' },
+              { name: 'Network', href: '#stats' },
+              { name: 'Solutions', href: '#features' },
+              { name: 'Insights', href: '#testimonials' }
+            ].map((item) => (
+              <a key={item.name} href={item.href} className="text-[14px] font-semibold text-muted-foreground hover:text-primary transition-colors">{item.name}</a>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-6">
+            <Link to="/login" className="text-[14px] font-semibold text-muted-foreground hover:text-primary hidden sm:block">Sign in</Link>
+            <Button size="sm" asChild className="rounded-full px-7 h-9 text-[14px] font-bold bg-primary text-white hover:bg-primary/90 transition-all">
               <Link to="/signup">Get Started</Link>
             </Button>
           </div>
         </div>
       </motion.nav>
 
-      {/* Hero */}
-      <section ref={heroRef} className="relative pt-28 pb-24 px-4 overflow-hidden">
-        {/* Decorative elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 50, repeat: Infinity, ease: "linear" }}
-            className="absolute -top-40 -right-40 w-96 h-96 rounded-full border border-accent/10"
-          />
-          <motion.div
-            animate={{ rotate: -360 }}
-            transition={{ duration: 70, repeat: Infinity, ease: "linear" }}
-            className="absolute -bottom-20 -left-20 w-72 h-72 rounded-full border border-primary/10"
-          />
-          <motion.div
-            className="absolute top-32 right-20 text-accent/30"
-            animate={{ y: [-5, 5, -5] }}
-            transition={{ duration: 4, repeat: Infinity }}
-          >
-            <Star className="w-6 h-6" />
-          </motion.div>
-          <motion.div
-            className="absolute top-48 left-16 text-primary/20"
-            animate={{ y: [5, -5, 5] }}
-            transition={{ duration: 5, repeat: Infinity }}
-          >
-            <Sparkles className="w-8 h-8" />
-          </motion.div>
-        </div>
+      {/* Hero Section - Balanced Hierarchy */}
+      <section ref={heroRef} className="relative pt-44 pb-24 px-6">
+        <div className="container mx-auto max-w-5xl">
+          <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-12">
+            <div className="flex-[1.2] text-center lg:text-left lg:pr-8">
+              <motion.p 
+                variants={fadeUp} initial="hidden" animate="visible"
+                className="text-[13px] font-bold text-muted-foreground mb-6 flex items-center justify-center lg:justify-start gap-2 uppercase tracking-[0.2em]"
+              >
+                Intelligent & Ready to Launch <span className="mb-0.5">🚀</span>
+              </motion.p>
+              
+              <motion.h1 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
+                className="text-5xl lg:text-7xl leading-[1.05] mb-8 font-extrabold tracking-tighter text-primary font-serif"
+              >
+                Enjoy Elite Talent <br />
+                for <span className="text-primary/40 italic font-medium">Your</span> <span className="text-primary relative inline-block isolate"><span className="relative z-10">Placement.</span><div className="absolute bottom-1.5 left-0 w-full h-3.5 bg-yellow-400 opacity-50 rounded-full z-0"></div></span>
+              </motion.h1>
 
-        <motion.div
-          style={{ y: heroY, opacity: heroOpacity }}
-          className="container mx-auto text-center max-w-3xl relative z-10"
-        >
-          <motion.div
-            variants={container}
-            initial="hidden"
-            animate="visible"
-          >
-            <motion.span
-              variants={fadeUp}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent/10 text-accent text-sm font-semibold mb-8 border border-accent/20"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Campus Placement Platform
-            </motion.span>
-            <motion.h1
-              variants={fadeUp}
-              className="text-5xl md:text-7xl font-serif font-bold text-foreground leading-[1.1] mb-6 tracking-tight"
-            >
-              Your Gateway to{" "}
-              <span className="text-gradient-gold italic">
-                Dream Placements
-              </span>
-            </motion.h1>
-            <motion.p
-              variants={fadeUp}
-              className="text-lg text-muted-foreground max-w-xl mx-auto mb-10 leading-relaxed"
-            >
-              Connecting students, recruiters, and placement cells on one seamless platform. Apply, hire, and manage — all in one place.
-            </motion.p>
-            <motion.div variants={fadeUp} className="flex items-center justify-center gap-4">
-              <Button size="lg" asChild className="px-8 bg-primary hover:bg-primary/90 shadow-xl shadow-primary/20 text-base">
-                <Link to="/signup">
-                  Start Now <ArrowRight className="ml-2 w-4 h-4" />
+              <motion.p 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.1 }}
+                className="text-[17px] text-muted-foreground max-w-lg mb-10 leading-relaxed mx-auto lg:mx-0 font-medium"
+              >
+                The world's most sophisticated ecosystem where elite talent meets global opportunity. Automated precision for your trajectory.
+              </motion.p>
+
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 mb-12">
+                <Button size="lg" asChild className="h-14 px-10 bg-primary text-white hover:bg-primary/90 rounded-full text-[16px] font-bold shadow-xl shadow-primary/10">
+                  <Link to="/signup">Join Now</Link>
+                </Button>
+                <Link to="/login" className="flex items-center gap-3 text-[16px] font-bold text-primary hover:gap-4 transition-all group">
+                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+                      <ArrowRight className="w-4 h-4" />
+                   </div>
+                   Discover How
                 </Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild className="px-8 text-base border-2">
-                <Link to="/login">Explore Dashboard</Link>
-              </Button>
+              </div>
+
+              {/* Trusted Users - Refined Balance */}
+              <motion.div variants={fadeUp} initial="hidden" animate="visible" transition={{ delay: 0.3 }} className="flex items-center justify-center lg:justify-start gap-4">
+                 <div className="flex -space-x-3.5">
+                    {[1,2,3].map(i => (
+                      <div key={i} className="w-12 h-12 rounded-full border-2 border-background bg-secondary overflow-hidden shadow-sm">
+                        <img src={`https://i.pravatar.cc/150?u=${i+30}`} alt="User" className="w-full h-full object-cover opacity-90 sepia-[.2]" />
+                      </div>
+                    ))}
+                 </div>
+                 <div className="text-left">
+                    <p className="text-[15px] font-bold text-primary tracking-tight">Trusted by over</p>
+                    <p className="text-[13px] text-muted-foreground font-medium">15k+ Elite Talents</p>
+                 </div>
+              </motion.div>
+            </div>
+
+            {/* Visual Side - Balanced Proportions */}
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              className="flex-1 relative hidden lg:block"
+            >
+              <div className="relative w-full aspect-square max-w-md ml-auto">
+                <div className="absolute inset-0 bg-white border border-primary/5 shadow-2xl rounded-[3rem] p-10 flex flex-col justify-center">
+                   <div className="flex items-center justify-between mb-10">
+                      <div className="flex items-center gap-4">
+                         <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center text-primary shadow-sm border border-primary/5"><CheckCircle className="w-6 h-6" /></div>
+                         <div>
+                            <p className="font-bold text-base text-primary">Elite Profile</p>
+                            <p className="text-[11px] text-muted-foreground font-bold tracking-widest uppercase">Pipeline Active</p>
+                         </div>
+                      </div>
+                      <Badge className="bg-secondary text-primary border-none px-4 py-1 font-bold text-[11px]">98.4% Match</Badge>
+                   </div>
+                   
+                   <div className="space-y-6 mb-10">
+                      {[1,2,3].map(i => (
+                        <div key={i} className="space-y-2">
+                           <div className="flex justify-between text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
+                              <span>Metric {i}</span>
+                              <span>{i*25}%</span>
+                           </div>
+                           <div className="h-2.5 bg-secondary rounded-full w-full overflow-hidden">
+                              <motion.div initial={{ width: 0 }} whileInView={{ width: `${i*25}%` }} className="h-full bg-primary rounded-full" transition={{ duration: 1, delay: i*0.1 }} />
+                           </div>
+                        </div>
+                      ))}
+                   </div>
+
+                   <div className="p-5 bg-secondary rounded-3xl border border-primary/5 flex items-center gap-5">
+                      <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-white"><TrendingUp className="w-6 h-6" /></div>
+                      <div>
+                         <p className="text-2xl font-extrabold tracking-tighter text-primary">₹28 LPA</p>
+                         <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest">Top Placement</p>
+                      </div>
+                   </div>
+                </div>
+
+                <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 4, repeat: Infinity }} className="absolute -top-6 -right-6 bg-white py-2 px-6 rounded-full shadow-xl border border-primary/5 text-[12px] font-bold flex items-center gap-2 text-primary">
+                   <span className="w-2 h-2 rounded-full bg-primary/40" /> Active status
+                </motion.div>
+              </div>
             </motion.div>
-          </motion.div>
-        </motion.div>
-      </section>
-
-      {/* Stats */}
-      <section className="py-16 border-y bg-primary text-primary-foreground relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(circle at 20% 50%, hsl(38 72% 54% / 0.3), transparent 50%)" }} />
-        </div>
-        <div className="container mx-auto px-4 relative z-10">
-          <motion.div
-            variants={container}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-8"
-          >
-            {stats.map((stat) => (
-              <motion.div
-                key={stat.label}
-                variants={scaleIn}
-                className="text-center"
-              >
-                <stat.icon className="w-7 h-7 text-accent mx-auto mb-3" />
-                <p className="text-4xl font-serif font-bold mb-1">{stat.value}</p>
-                <p className="text-sm text-primary-foreground/70">{stat.label}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="py-24 px-4">
-        <div className="container mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-16"
-          >
-            <span className="text-sm font-semibold text-accent uppercase tracking-widest mb-3 block">Features</span>
-            <h2 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-4">Built for Every Stakeholder</h2>
-            <p className="text-muted-foreground max-w-lg mx-auto text-lg">
-              Whether you're a student, recruiter, or admin — PlaceHub has you covered.
-            </p>
-          </motion.div>
-          <motion.div
-            variants={container}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto"
-          >
-            {features.map((f) => (
-              <motion.div
-                key={f.title}
-                variants={fadeUp}
-                whileHover={{ y: -6, transition: { duration: 0.3 } }}
-                className="bg-card rounded-2xl p-8 border shadow-sm hover:shadow-xl transition-shadow duration-500 group relative overflow-hidden"
-              >
-                <div className={`absolute inset-0 bg-gradient-to-br ${f.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-                <div className="relative z-10">
-                  <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-6 group-hover:bg-primary/15 transition-colors">
-                    <f.icon className="w-7 h-7 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-serif font-bold text-foreground mb-3">{f.title}</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">{f.description}</p>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="py-24 px-4 bg-muted/50">
-        <div className="container mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-16"
-          >
-            <span className="text-sm font-semibold text-accent uppercase tracking-widest mb-3 block">Testimonials</span>
-            <h2 className="text-4xl font-serif font-bold text-foreground">Loved by Thousands</h2>
-          </motion.div>
-          <motion.div
-            variants={container}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto"
-          >
-            {testimonials.map((t) => (
-              <motion.div
-                key={t.name}
-                variants={fadeUp}
-                whileHover={{ y: -4 }}
-                className="bg-card rounded-2xl p-8 border shadow-sm"
-              >
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-accent text-accent" />
-                  ))}
-                </div>
-                <p className="text-foreground mb-6 leading-relaxed italic">"{t.text}"</p>
-                <div>
-                  <p className="font-semibold text-foreground text-sm">{t.name}</p>
-                  <p className="text-xs text-muted-foreground">{t.role}</p>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-24 px-4">
-        <div className="container mx-auto">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7 }}
-            className="max-w-3xl mx-auto text-center bg-primary text-primary-foreground rounded-3xl p-12 md:p-16 relative overflow-hidden"
-          >
-            <div className="absolute inset-0 opacity-20">
-              <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(circle at 80% 20%, hsl(38 72% 54% / 0.5), transparent 50%)" }} />
-            </div>
-            <div className="relative z-10">
-              <h2 className="text-3xl md:text-4xl font-serif font-bold mb-4">Ready to Get Placed?</h2>
-              <p className="text-primary-foreground/70 mb-8 text-lg max-w-md mx-auto">
-                Join thousands of students who found their dream careers through PlaceHub.
-              </p>
-              <Button size="lg" variant="secondary" asChild className="px-10 text-base font-semibold shadow-xl">
-                <Link to="/signup">
-                  Create Free Account <ArrowRight className="ml-2 w-4 h-4" />
-                </Link>
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t py-10 px-4 bg-card">
-        <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <GraduationCap className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <span className="font-serif font-bold text-foreground">PlaceHub</span>
           </div>
-          <p className="text-sm text-muted-foreground">© 2026 PlaceHub. All rights reserved.</p>
+        </div>
+      </section>
+
+      {/* Elegant Infinite Marquee / Global Partners */}
+      <section className="py-10 border-y border-primary/5 bg-secondary/50 overflow-hidden flex items-center">
+         <div className="container mx-auto px-6 flex justify-between items-center gap-12 opacity-60 grayscale hover:grayscale-0 transition-all duration-700 overflow-x-auto no-scrollbar">
+             <div className="flex items-center gap-3 text-xl font-serif font-bold text-primary min-w-max"><Building2 className="w-6 h-6" /> Vertex</div>
+             <div className="flex items-center gap-3 text-xl font-serif font-bold text-primary min-w-max"><Award className="w-6 h-6" /> Pinnacle</div>
+             <div className="flex items-center gap-3 text-xl font-serif font-bold text-primary min-w-max"><Globe className="w-6 h-6" /> Nexus</div>
+             <div className="flex items-center gap-3 text-xl font-serif font-bold text-primary min-w-max"><TrendingUp className="w-6 h-6" /> Apex Global</div>
+             <div className="flex items-center gap-3 text-xl font-serif font-bold text-primary min-w-max hidden md:flex"><ShieldCheck className="w-6 h-6" /> Nova Corp</div>
+         </div>
+      </section>
+      {/* Stats Row - Unified */}
+      <section id="stats" className="py-16 bg-white border-y border-primary/5">
+        <div className="container mx-auto px-6 max-w-5xl">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-12">
+            {stats.map((stat, i) => (
+              <motion.div key={stat.label} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ delay: i * 0.1 }} viewport={{ once: true }} className="text-center">
+                <p className="text-4xl font-extrabold font-serif tracking-tighter mb-2 text-primary">{stat.value}</p>
+                <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-[0.2em]">{stat.label}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section - Equivalent Scale */}
+      <section id="features" className="py-20 px-6">
+        <div className="container mx-auto max-w-5xl">
+          <div className="text-center mb-16">
+            <Badge className="mb-4 bg-primary text-white px-4 py-1 rounded-full text-[11px] font-bold uppercase tracking-widest" variant="default">Expertise</Badge>
+            <h2 className="text-4xl lg:text-5xl font-extrabold tracking-tighter mb-4 text-primary font-serif">Engineered for Velocity</h2>
+            <p className="text-muted-foreground text-base font-medium">Institutional-grade performance redesigned for the modern placement cycle.</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {features.map((f, i) => (
+              <motion.div key={f.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} viewport={{ once: true }} className="bg-white rounded-[2rem] p-10 border border-primary/5 hover:shadow-2xl transition-all group">
+                <div className="w-14 h-14 rounded-2xl bg-secondary border border-primary/5 flex items-center justify-center mb-8 group-hover:bg-primary group-hover:text-white transition-all shadow-sm text-primary">
+                  <f.icon className="w-7 h-7" />
+                </div>
+                <h3 className="text-2xl font-bold mb-4 tracking-tight text-primary font-serif">{f.title}</h3>
+                <p className="text-muted-foreground text-[15px] leading-relaxed mb-8 font-medium">{f.description}</p>
+                <Link to="/signup" className="inline-flex items-center gap-2 text-[12px] font-bold uppercase tracking-widest text-primary hover:gap-3 transition-all">
+                   Explore <ArrowRight className="w-4 h-4" />
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How it Works / The Process - Deeply Chic & Minimalist */}
+      <section id="process" className="py-24 px-6 border-t border-primary/5 bg-secondary/30 relative">
+        <div className="container mx-auto max-w-5xl">
+          <div className="flex flex-col lg:flex-row gap-16 lg:gap-24 items-start">
+             <div className="flex-1 lg:sticky lg:top-32">
+                <Badge className="mb-6 bg-primary/10 text-primary border-none px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-widest hover:bg-primary/20 transition-colors">End-to-End Workflow</Badge>
+                <h2 className="text-4xl lg:text-6xl font-extrabold tracking-tighter mb-8 text-primary font-serif leading-[1.05]">The Architecture<br />of Placement.</h2>
+                <p className="text-muted-foreground text-[17px] font-medium leading-relaxed max-w-sm">From initial student registration to the final offer letter, experience a remarkably intelligent, frictionless recruitment ecosystem.</p>
+             </div>
+             
+             <div className="flex-[1.2] flex flex-col gap-12 lg:gap-16">
+                {[
+                  {
+                    num: "01",
+                    title: "Student Profiling & Auth",
+                    desc: "Students sign up and fill comprehensive profiles. Resumes are algorithmically parsed for skills, and university admins strictly verify eligibility."
+                  },
+                  {
+                    num: "02",
+                    title: "Company Jobs & Smart Filters",
+                    desc: "Companies post exact job requirements. The system instantly applies smart CGPA/branch filters, so recruiters only review perfectly matching candidates."
+                  },
+                  {
+                    num: "03",
+                    title: "Interviews & Final Results",
+                    desc: "Recruiters seamlessly shortlist applicants. Interview invitations trigger automated emails, leading straight to definitive selections."
+                  }
+                ].map((step, i) => (
+                   <motion.div key={step.num} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.15 }} viewport={{ once: true }} className="relative pl-10 md:pl-0">
+                      <div className="md:hidden absolute left-0 top-0 text-3xl font-serif text-primary/20 font-bold">{step.num}</div>
+                      <div className="flex flex-col md:flex-row gap-6 md:gap-12 items-start group">
+                         <div className="hidden md:block text-5xl lg:text-7xl font-serif font-extrabold text-primary/10 group-hover:text-primary/30 transition-colors tracking-tighter leading-none mt-1">
+                            {step.num}
+                         </div>
+                         <div>
+                            <h3 className="text-2xl lg:text-3xl font-bold mb-4 tracking-tight text-primary font-serif">{step.title}</h3>
+                            <p className="text-muted-foreground text-[16px] leading-relaxed font-medium">{step.desc}</p>
+                         </div>
+                      </div>
+                      {/* Elegant subtle divider */}
+                      {i !== 2 && <div className="mt-12 h-px w-full bg-gradient-to-r from-primary/10 to-transparent" />}
+                   </motion.div>
+                ))}
+             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials - No Box Background */}
+      <section id="testimonials" className="py-16 px-6 mb-8">
+        <div className="container mx-auto max-w-5xl">
+           <div className="text-center mb-12">
+              <h2 className="text-3xl lg:text-4xl font-extrabold tracking-tighter mb-4 text-primary font-serif">Trusted by Achievers</h2>
+              <p className="text-muted-foreground text-sm font-medium">Hear from elite talent across our network.</p>
+           </div>
+           <div className="grid md:grid-cols-3 gap-6">
+             {testimonials.map((t, i) => (
+               <motion.div key={t.name} initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} viewport={{ once: true }} className="bg-white rounded-3xl p-7 flex flex-col h-full hover:shadow-xl transition-all shadow-md">
+                 <div className="flex gap-1 mb-4">
+                   {[...Array(5)].map((_, i) => <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />)}
+                 </div>
+                 <p className="text-primary/70 text-sm mb-6 leading-relaxed flex-1 font-medium italic">"{t.text}"</p>
+                 <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-secondary text-primary flex items-center justify-center font-bold text-[11px] border border-primary/5">{t.avatar}</div>
+                    <div>
+                       <p className="font-bold text-[13px] text-primary">{t.name}</p>
+                       <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">{t.role}</p>
+                    </div>
+                 </div>
+               </motion.div>
+             ))}
+           </div>
+        </div>
+      </section>
+
+      {/* Simple Minimalist Footer */}
+      <footer className="py-12 px-6 bg-background">
+        <div className="container mx-auto max-w-5xl flex flex-col md:flex-row items-center justify-between gap-8 border-t border-primary/10 pt-12">
+          <div className="flex items-center gap-2">
+            <Zap className="w-5 h-5 text-primary fill-current" />
+            <span className="font-bold font-serif text-xl tracking-tighter text-primary">Hireque</span>
+          </div>
+          
+          <div className="flex gap-8">
+             {['Privacy', 'Network', 'Support'].map(i => (
+               <Link key={i} to="#" className="text-[13px] font-bold text-muted-foreground hover:text-primary transition-colors">{i}</Link>
+             ))}
+          </div>
+
+          <p className="text-[12px] text-muted-foreground font-medium uppercase tracking-widest">© 2026 Hireque.</p>
         </div>
       </footer>
     </div>
