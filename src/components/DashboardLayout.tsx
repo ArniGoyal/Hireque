@@ -25,7 +25,6 @@ const studentNav: NavItem[] = [
 
 const recruiterNav: NavItem[] = [
   { title: "Dashboard", url: "/dashboard/recruiter", icon: LayoutDashboard },
-  { title: "Post Job", url: "/dashboard/recruiter/post-job", icon: PlusCircle },
   { title: "Applicants", url: "/dashboard/recruiter/applicants", icon: Users },
   { title: "Shortlisted", url: "/dashboard/recruiter/shortlisted", icon: UserCheck },
   { title: "Schedule", url: "/dashboard/recruiter/schedule", icon: CalendarDays },

@@ -1,168 +1,253 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import DashboardLayout from "@/components/DashboardLayout";
 import StatCard from "@/components/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, FileText, CalendarDays, Briefcase, ArrowRight, Loader2 } from "lucide-react";
-import { useState } from "react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from "@/components/ui/select";
+import {
+  Users, FileText, CalendarDays, Briefcase, Loader2, Plus, MapPin, IndianRupee, Clock, Code, Search, ArrowLeft
+} from "lucide-react";
+import { useState, useMemo } from "react";
+import { useLocation, Link } from "react-router-dom";
 import { toast } from "sonner";
 
-const initialJobs = [
-  { id: 1, role: "SDE Intern", applications: 48, shortlisted: 12, status: "Active" },
-  { id: 2, role: "Data Analyst", applications: 32, shortlisted: 8, status: "Active" },
-  { id: 3, role: "Frontend Developer", applications: 55, shortlisted: 15, status: "Closed" },
-];
+// --- ANIMATION VARIANTS (Defined outside to fix the "not found" error) ---
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08 }
+  }
+};
 
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 260, damping: 20 }
+  },
+  exit: { opacity: 0, scale: 0.95, transition: { duration: 0.2 } }
+};
+
+// --- INITIAL DATA ---
 const initialApplicants = [
-  { id: 101, name: "Priya Sharma", branch: "CSE", cgpa: 9.2, skills: ["React", "Node.js", "Python"], status: "Pending" },
-  { id: 102, name: "Arjun Mehta", branch: "IT", cgpa: 8.8, skills: ["Java", "Spring", "AWS"], status: "Pending" },
+  { id: 101, name: "Priya Sharma", branch: "CSE", cgpa: 9.2, skills: ["React", "Node.js", "Tailwind"], status: "Pending" },
+  { id: 102, name: "Arjun Mehta", branch: "IT", cgpa: 8.8, skills: ["Java", "AWS", "SQL"], status: "Pending" },
   { id: 103, name: "Sneha Reddy", branch: "CSE", cgpa: 9.5, skills: ["ML", "Python", "TensorFlow"], status: "Pending" },
   { id: 104, name: "Karan Singh", branch: "ECE", cgpa: 8.6, skills: ["C++", "Embedded", "IoT"], status: "Pending" },
+  { id: 105, name: "Ananya Gupta", branch: "IT", cgpa: 9.1, skills: ["Flutter", "Dart", "Firebase"], status: "Pending" },
+  { id: 106, name: "Ishaan Malhotra", branch: "CSE", cgpa: 8.4, skills: ["Next.js", "TypeScript", "Prisma"], status: "Pending" },
+  { id: 107, name: "Riya Verma", branch: "MAE", cgpa: 8.9, skills: ["AutoCAD", "MATLAB", "SolidWorks"], status: "Pending" },
+  { id: 108, name: "Sahil Kapoor", branch: "IT", cgpa: 8.2, skills: ["Cybersecurity", "Linux"], status: "Pending" },
+  { id: 109, name: "Mehak Jain", branch: "CSE", cgpa: 9.7, skills: ["Deep Learning", "NLP"], status: "Pending" },
+  { id: 110, name: "Vikram Das", branch: "ECE", cgpa: 8.7, skills: ["VLSI", "Verilog"], status: "Pending" },
+];
+
+const initialJobs = [
+  { id: 1, role: "SDE Intern", type: "Internship", applications: 48, status: "Active", package: "12", location: "Bangalore", skills: "React, Node.js" },
+  { id: 2, role: "Data Analyst", type: "Full-time", applications: 32, status: "Active", package: "10", location: "Remote", skills: "Python, SQL" },
 ];
 
 const RecruiterDashboard = () => {
   const [jobs, setJobs] = useState(initialJobs);
   const [applicants, setApplicants] = useState(initialApplicants);
+  const [searchTerm, setSearchTerm] = useState("");
   const [isPosting, setIsPosting] = useState(false);
+  const [open, setOpen] = useState(false);
+  const location = useLocation();
 
-  const handlePostJob = () => {
+  // Route Detection
+  const isMainDashboard = location.pathname === "/dashboard/recruiter";
+  const isShortlistedView = location.pathname.includes("shortlisted");
+  const isScheduleView = location.pathname.includes("schedule");
+
+  const [newJob, setNewJob] = useState({
+    role: "", type: "Full-time", cgpa: "7.0", branch: "All Branches", package: "", location: "", skills: ""
+  });
+
+  const handleCreateJob = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newJob.role || !newJob.location) return toast.error("Please fill required fields");
     setIsPosting(true);
-    toast("Configuring Smart Limits...", { description: "Setting up AI eligibility for your newly posted role." });
     setTimeout(() => {
-        setIsPosting(false);
-        const newJob = { id: Date.now(), role: "Product Manager", applications: 0, shortlisted: 0, status: "Active" };
-        setJobs([newJob, ...jobs]);
-        toast.success("Role Posted to Hiring Pool!", { description: "You will systematically receive AI-scored matches." });
-    }, 2000);
+      setJobs([{ id: Date.now(), ...newJob, applications: 0, status: "Active" }, ...jobs]);
+      setIsPosting(false);
+      setOpen(false);
+      setNewJob({ role: "", type: "Full-time", cgpa: "7.0", branch: "All Branches", package: "", location: "", skills: "" });
+      toast.success("Role Broadcasted!");
+    }, 1200);
   };
 
   const handleShortlist = (id: number) => {
-    setApplicants(applicants.map(a => a.id === id ? { ...a, status: "Shortlisted" } : a));
-    toast.success("Applicant Shortlisted!", { description: "Added to the interview pipeline." });
+    setApplicants(prev => prev.map(a => a.id === id ? { ...a, status: "Shortlisted" } : a));
+    toast.success("Applicant Shortlisted");
   };
 
   const handleSchedule = (id: number) => {
-    setApplicants(applicants.map(a => a.id === id ? { ...a, status: "Scheduled" } : a));
-    toast.success("Interview Scheduled", { description: "Invites have been dispatched via EmailJS." });
+    setApplicants(prev => prev.map(a => a.id === id ? { ...a, status: "Scheduled" } : a));
+    toast.info("Interview Scheduled");
   };
+
+  const displayApplicants = useMemo(() => {
+    return applicants.filter(a => {
+      const matchesRoute = isShortlistedView ? a.status === "Shortlisted" : isScheduleView ? a.status === "Scheduled" : true;
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = a.name.toLowerCase().includes(searchLower) ||
+        a.branch.toLowerCase().includes(searchLower) ||
+        a.skills.some(s => s.toLowerCase().includes(searchLower));
+      return matchesRoute && matchesSearch;
+    });
+  }, [applicants, isShortlistedView, isScheduleView, searchTerm]);
 
   return (
     <DashboardLayout role="recruiter">
-      <div className="space-y-8">
-        <div className="flex justify-between items-end">
-          <div>
-            <h1 className="text-3xl font-serif font-extrabold tracking-tighter text-primary">Recruiter Command Center</h1>
-            <p className="text-muted-foreground mt-2 font-medium">Post roles and curate elite talent globally.</p>
-          </div>
-          <Button onClick={handlePostJob} disabled={isPosting} className="rounded-full shadow-lg shadow-primary/20 bg-primary text-white font-bold h-12 px-8 hover:-translate-y-1 transition-transform disabled:hover:translate-y-0 disabled:opacity-80">
-            {isPosting ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : '+'} {isPosting ? 'Posting...' : 'Post New Role'}
-          </Button>
-        </div>
+      <div className="space-y-8 pb-10">
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard icon={Briefcase} title="Active Postings" value={jobs.filter(j => j.status === 'Active').length} index={0} />
-          <StatCard icon={Users} title="Total Applicants" value={135} trend="AI Filtered" trendUp index={1} />
-          <StatCard icon={FileText} title="Shortlisted" value={35 + applicants.filter(a => a.status !== 'Pending').length} index={2} />
-          <StatCard icon={CalendarDays} title="Interviews Pending" value={8 + applicants.filter(a => a.status === 'Scheduled').length} index={3} />
-        </div>
+        {/* --- HEADER (Only on Main Dashboard) --- */}
+        {isMainDashboard && (
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex justify-between items-end">
+            <div>
+              <h1 className="text-4xl font-serif font-extrabold tracking-tighter text-primary">Recruiter Command Center</h1>
+              <p className="text-muted-foreground mt-2 font-medium">Manage elite talent and broadcast roles.</p>
+            </div>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button className="rounded-full shadow-lg bg-primary text-white font-bold h-12 px-8 hover:scale-105 transition-all">
+                  <Plus className="w-5 h-5 mr-2" /> Post New Role
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] p-8 border-primary/10">
+                <DialogHeader><DialogTitle className="font-serif text-3xl text-primary">Job Details</DialogTitle></DialogHeader>
+                <form onSubmit={handleCreateJob} className="space-y-4 py-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1"><Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Title</Label><Input placeholder="SDE-1" value={newJob.role} onChange={e => setNewJob({ ...newJob, role: e.target.value })} className="rounded-xl" /></div>
+                    <div className="space-y-1"><Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Type</Label>
+                      <Select value={newJob.type} onValueChange={val => setNewJob({ ...newJob, type: val })}><SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Full-time">Full-time</SelectItem><SelectItem value="Internship">Internship</SelectItem></SelectContent></Select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1"><Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Location</Label><Input placeholder="Bangalore" value={newJob.location} onChange={e => setNewJob({ ...newJob, location: e.target.value })} className="rounded-xl" /></div>
+                    <div className="space-y-1"><Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">LPA</Label><Input placeholder="12" value={newJob.package} onChange={e => setNewJob({ ...newJob, package: e.target.value })} className="rounded-xl" /></div>
+                  </div>
+                  <div className="space-y-1"><Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Skills</Label><Input placeholder="React, Java..." value={newJob.skills} onChange={e => setNewJob({ ...newJob, skills: e.target.value })} className="rounded-xl" /></div>
+                  <Button type="submit" disabled={isPosting} className="w-full bg-primary h-14 rounded-2xl font-bold text-white shadow-xl mt-4">
+                    {isPosting ? <Loader2 className="animate-spin" /> : "Broadcast Role"}
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </motion.div>
+        )}
 
-        <div className="grid xl:grid-cols-3 gap-8">
-           {/* Posted Jobs */}
-           <motion.div
-             initial={{ opacity: 0, y: 20 }}
-             animate={{ opacity: 1, y: 0 }}
-             transition={{ duration: 0.5, delay: 0.4 }}
-             className="bg-white border border-primary/10 rounded-3xl overflow-hidden shadow-sm xl:col-span-2"
-           >
-             <div className="flex items-center justify-between p-6 border-b border-primary/5">
-               <div>
-                  <h3 className="font-serif font-bold text-xl text-primary">Your Job Postings</h3>
-                  <p className="text-[13px] text-muted-foreground font-medium mt-1">Manage active roles and eligibility filters.</p>
-               </div>
-             </div>
-             <div className="divide-y divide-primary/5 max-h-[400px] overflow-y-auto no-scrollbar">
-               {jobs.map((job, i) => (
-                 <motion.div
-                   key={job.id}
-                   initial={{ opacity: 0, x: -10 }}
-                   animate={{ opacity: 1, x: 0 }}
-                   transition={{ delay: 0.5 + i * 0.08 }}
-                   className="flex items-center justify-between p-5 px-6 hover:bg-secondary/30 transition-colors"
-                 >
-                   <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center font-bold text-white shadow-sm">
-                         <Briefcase className="w-5 h-5 text-white/70" />
-                      </div>
+        {/* --- STATS --- */}
+        {isMainDashboard && (
+          <motion.div initial="hidden" animate="visible" variants={containerVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StatCard icon={Briefcase} title="Active Postings" value={jobs.length} index={0} />
+            <StatCard icon={Users} title="Total Applicants" value={applicants.length} index={1} />
+            <StatCard icon={FileText} title="Shortlisted" value={applicants.filter(a => a.status === 'Shortlisted').length} index={2} />
+            <StatCard icon={CalendarDays} title="Interviews" value={applicants.filter(a => a.status === 'Scheduled').length} index={3} />
+          </motion.div>
+        )}
+
+        <div className={`grid ${isMainDashboard ? 'xl:grid-cols-3' : 'grid-cols-1'} gap-8`}>
+
+          {/* --- ACTIVE JOBS --- */}
+          {isMainDashboard && (
+            <div className="xl:col-span-2 space-y-6">
+              <h3 className="font-serif font-bold text-2xl text-primary">Active Job Board</h3>
+              <div className="grid gap-4">
+                {jobs.map((job) => (
+                  <motion.div key={job.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-[2rem] border border-primary/10 flex items-center justify-between shadow-sm hover:shadow-md transition-all group">
+                    <div className="flex items-center gap-5">
+                      <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all"><Briefcase className="w-6 h-6" /></div>
                       <div>
-                        <p className="font-bold text-[15px] text-primary">{job.role}</p>
-                        <p className="text-[13px] text-muted-foreground font-medium mt-0.5">{job.applications} Applicants · {job.shortlisted} Shortlisted</p>
+                        <p className="font-bold text-xl text-primary">{job.role}</p>
+                        <div className="flex flex-wrap gap-4 mt-1.5 font-bold text-muted-foreground text-[10px] uppercase">
+                          <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {job.type}</span>
+                          <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> {job.location}</span>
+                          <span className="flex items-center gap-1.5"><IndianRupee className="w-3.5 h-3.5" /> {job.package} LPA</span>
+                        </div>
                       </div>
-                   </div>
-                   <div className="flex items-center gap-4">
-                     <Badge variant="outline" className={`rounded-full font-bold px-4 border text-[11px] uppercase tracking-widest bg-transparent ${job.status === 'Active' ? 'text-primary border-primary/20' : 'text-muted-foreground border-primary/10'}`}>{job.status}</Badge>
-                     <Button variant="ghost" size="sm" className="font-bold text-primary hover:bg-secondary">View Pool</Button>
-                   </div>
-                 </motion.div>
-               ))}
-             </div>
-           </motion.div>
+                    </div>
+                    <Badge className="bg-primary text-white border-none font-bold uppercase tracking-widest text-[10px] px-5 py-2 rounded-full">{job.status}</Badge>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
 
-           {/* Top Applicants / AI Scored */}
-           <motion.div
-             initial={{ opacity: 0, y: 20 }}
-             animate={{ opacity: 1, y: 0 }}
-             transition={{ duration: 0.5, delay: 0.6 }}
-             className="bg-white border border-primary/10 rounded-3xl overflow-hidden shadow-sm flex flex-col"
-           >
-             <div className="p-6 border-b border-primary/5 bg-secondary/30">
-               <h3 className="font-serif font-bold text-xl text-primary">Highest AI Matches</h3>
-               <p className="text-[13px] text-muted-foreground font-medium mt-1">Algorithmically scored applicants.</p>
-             </div>
-             <div className="divide-y divide-primary/5 flex-1 max-h-[400px] overflow-y-auto no-scrollbar">
-               {applicants.map((a, i) => (
-                 <motion.div
-                   key={a.id}
-                   initial={{ opacity: 0, x: -10 }}
-                   animate={{ opacity: 1, x: 0 }}
-                   transition={{ delay: 0.7 + i * 0.08 }}
-                   className="p-5 hover:bg-secondary/20 transition-colors group flex flex-col gap-3"
-                 >
-                   <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-primary font-bold text-sm font-serif border border-primary/10">
-                          {a.name.charAt(0)}
+          {/* --- APPLICANT LIST (Full Width when on subpages) --- */}
+          <div className="flex flex-col gap-6 w-full">
+            {!isMainDashboard && (
+              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-5">
+                  <Link to="/dashboard/recruiter" className="w-12 h-12 flex items-center justify-center hover:bg-secondary rounded-full border border-primary/5 transition-colors"><ArrowLeft className="text-primary" /></Link>
+                  <h2 className="text-4xl font-serif font-extrabold tracking-tighter text-primary">
+                    {isShortlistedView ? "Shortlisted Pipeline" : isScheduleView ? "Interview Schedule" : "Global Talent Pool"}
+                  </h2>
+                </div>
+                <Badge className="bg-primary/10 text-primary font-bold px-5 py-2 rounded-full">{displayApplicants.length} Candidates</Badge>
+              </motion.div>
+            )}
+
+            {isMainDashboard && <h3 className="font-serif font-bold text-2xl text-primary">Matched Talent Pool</h3>}
+
+            <div className="bg-white border border-primary/10 rounded-[2.5rem] overflow-hidden shadow-sm flex flex-col w-full">
+              <div className="p-5 border-b border-primary/5 bg-secondary/20">
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input placeholder="Search name, branch, skills..." className="pl-12 h-12 rounded-2xl bg-white border-primary/10 text-md" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                </div>
+              </div>
+
+              <motion.div layout initial="hidden" animate="visible" variants={containerVariants} className={`p-8 overflow-y-auto no-scrollbar ${isMainDashboard ? 'max-h-[500px]' : 'min-h-[70vh]'}`}>
+                <div className={`grid gap-6 ${isMainDashboard ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
+                  <AnimatePresence mode="popLayout">
+                    {displayApplicants.map((a) => (
+                      <motion.div key={a.id} layout variants={cardVariants} initial="hidden" animate="visible" exit="exit" className="bg-white p-6 rounded-[2rem] border border-primary/5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col gap-5 group">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xl shadow-lg border-4 border-white">{a.name.charAt(0)}</div>
+                            <div>
+                              <p className="font-bold text-lg text-primary">{a.name}</p>
+                              <p className="text-[11px] font-bold text-muted-foreground uppercase">{a.branch} Branch</p>
+                            </div>
+                          </div>
+                          <div className="text-right bg-secondary/50 px-3 py-1 rounded-xl border border-primary/5">
+                            <span className="font-serif font-black text-primary text-2xl leading-none">{a.cgpa}</span>
+                            <p className="text-[9px] font-bold text-muted-foreground uppercase leading-none mt-1">CGPA</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-[14px] text-primary">{a.name}</p>
-                          <p className="text-[11px] text-muted-foreground font-bold tracking-widest uppercase mt-0.5">{a.branch}</p>
+
+                        <div className="flex flex-wrap gap-2 min-h-[50px]">
+                          {a.skills.map(s => <Badge key={s} variant="outline" className="text-[10px] px-3 py-0.5 border-primary/10 text-primary/80 font-bold rounded-lg bg-white shadow-sm">{s}</Badge>)}
                         </div>
-                      </div>
-                      <div className="flex flex-col items-end">
-                         <span className="text-[16px] font-black text-primary font-serif">{a.cgpa} <span className="text-[10px] text-muted-foreground font-sans">CGPA</span></span>
-                      </div>
-                   </div>
-                   <div className="flex items-center gap-2 flex-wrap">
-                      <Badge className="bg-primary/5 text-primary border-none rounded-sm px-2 py-0 hover:bg-primary/10 text-[10px]">AI Score: {Math.floor(Math.random() * 15) + 85}</Badge>
-                      {a.skills.slice(0, 2).map((s) => (
-                        <Badge key={s} variant="outline" className="text-[10px] py-0 border-primary/10 bg-transparent text-muted-foreground rounded-sm">{s}</Badge>
-                      ))}
-                   </div>
-                   <div className="flex gap-2 w-full mt-2">
-                      {a.status === 'Pending' ? (
-                        <>
-                          <Button onClick={() => handleShortlist(a.id)} size="sm" className="flex-1 rounded-md bg-primary text-white font-bold h-8 text-[11px] shadow-sm">Shortlist</Button>
-                          <Button onClick={() => handleSchedule(a.id)} size="sm" variant="outline" className="flex-1 rounded-md border-primary/20 text-primary font-bold h-8 text-[11px]">Schedule</Button>
-                        </>
-                      ) : (
-                         <div className="w-full flex items-center justify-center h-8 rounded-md bg-secondary text-[11px] font-bold text-primary uppercase tracking-widest border border-primary/10">
-                            {a.status}
-                         </div>
-                      )}
-                   </div>
-                 </motion.div>
-               ))}
-             </div>
-           </motion.div>
+
+                        <div className="flex gap-3 w-full mt-auto">
+                          {a.status === 'Pending' ? (
+                            <>
+                              <Button onClick={() => handleShortlist(a.id)} size="sm" className="flex-1 bg-primary text-white h-10 text-[11px] font-bold rounded-xl shadow-md">Shortlist</Button>
+                              <Button onClick={() => handleSchedule(a.id)} size="sm" variant="outline" className="flex-1 h-10 text-[11px] font-bold border-primary/20 text-primary rounded-xl">Schedule</Button>
+                            </>
+                          ) : (
+                            <div className="w-full text-center py-3 rounded-xl bg-secondary text-[11px] font-bold text-primary uppercase border border-primary/10 tracking-[0.2em]">{a.status}</div>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </motion.div>
+            </div>
+          </div>
         </div>
       </div>
     </DashboardLayout>
