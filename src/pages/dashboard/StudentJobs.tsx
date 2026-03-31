@@ -3,7 +3,9 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Briefcase, Search, Filter } from "lucide-react";
-
+import { useState } from "react";
+import { toast } from "sonner";
+import { useState } from "react";
 const allJobs = [
   { id: 1, company: "Google", role: "SDE Intern", package: "₹45 LPA", type: "Internship", deadline: "Apr 5, 2026", eligible: true },
   { id: 2, company: "Microsoft", role: "Software Engineer", package: "₹38 LPA", type: "Full Time", deadline: "Apr 8, 2026", eligible: true },
@@ -14,6 +16,30 @@ const allJobs = [
 ];
 
 const StudentJobs = () => {
+  const [jobs, setJobs] = useState(allJobs);
+  const handleApply = (id: number) => {
+  const job = jobs.find(j => j.id === id);
+  if (!job) return;
+
+  toast.success(`Applied to ${job.company}`, {
+    description: `${job.role} application submitted successfully`,
+  });
+
+  // remove job after applying (optional UX)
+  setJobs(jobs.filter(j => j.id !== id));
+};
+const [jobs, setJobs] = useState(allJobs);
+const [search, setSearch] = useState("");
+const [filterEligible, setFilterEligible] = useState(false);
+const filteredJobs = jobs.filter((job) => {
+  const matchesSearch =
+    job.company.toLowerCase().includes(search.toLowerCase()) ||
+    job.role.toLowerCase().includes(search.toLowerCase());
+
+  const matchesFilter = filterEligible ? job.eligible : true;
+
+  return matchesSearch && matchesFilter;
+});
   return (
     <DashboardLayout role="student">
       <div className="space-y-8 max-w-6xl mx-auto">
@@ -25,16 +51,26 @@ const StudentJobs = () => {
           <div className="flex gap-3">
              <div className="relative flex-1 sm:w-64">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input type="text" placeholder="Search companies, roles..." className="w-full h-10 pl-10 pr-4 text-sm bg-white border border-primary/10 rounded-full focus:outline-none focus:ring-1 focus:ring-primary/20 shadow-sm transition-all" />
+                <input
+  type="text"
+  placeholder="Search companies, roles..."
+  value={search}
+  onChange={(e) => setSearch(e.target.value)}
+  className="w-full h-10 pl-10 pr-4 text-sm bg-white border border-primary/10 rounded-full focus:outline-none focus:ring-1 focus:ring-primary/20 shadow-sm transition-all"
+/>
              </div>
-             <Button variant="outline" className="rounded-full shadow-sm border-primary/10 text-primary w-10 sm:w-auto px-0 sm:px-6">
+             <Button
+  onClick={() => setFilterEligible(!filterEligible)}
+  variant="outline"
+  className="rounded-full shadow-sm border-primary/10 text-primary w-10 sm:w-auto px-0 sm:px-6"
+>
                 <Filter className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline font-bold">Filters</span>
              </Button>
           </div>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {allJobs.map((job, i) => (
+            {filteredJobs.map((job, i) => (
                 <motion.div
                     key={job.id}
                     initial={{ opacity: 0, scale: 0.95 }}
@@ -66,9 +102,13 @@ const StudentJobs = () => {
                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Package</p>
                            <p className="font-serif font-black text-primary text-lg">{job.package}</p>
                         </div>
-                        <Button disabled={!job.eligible} className="rounded-full font-bold shadow-md shadow-primary/10 hover:-translate-y-0.5 transition-transform disabled:hover:translate-y-0 disabled:opacity-50">
-                            Apply
-                        </Button>
+                        <Button
+  onClick={() => handleApply(job.id)}
+  disabled={!job.eligible}
+  className="rounded-full font-bold shadow-md shadow-primary/10 hover:-translate-y-0.5 transition-transform disabled:hover:translate-y-0 disabled:opacity-50"
+>
+  Apply
+</Button>
                     </div>
                 </motion.div>
             ))}

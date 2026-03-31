@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Briefcase, FileText, CalendarDays, CheckCircle, ArrowRight, Upload } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const initialJobs = [
   { id: 1, company: "Google", role: "SDE Intern", package: "₹45 LPA", deadline: "Apr 5, 2026", eligible: true },
@@ -25,6 +26,7 @@ const StudentDashboard = () => {
   const [apps, setApps] = useState(initialApplications);
   const [isUploading, setIsUploading] = useState(false);
   const [aiScore, setAiScore] = useState(88);
+  const navigate = useNavigate();
 
   const handleApply = (jobId: number) => {
     const jobToApply = jobs.find(j => j.id === jobId);
@@ -69,7 +71,7 @@ const StudentDashboard = () => {
            <div className="flex items-center gap-6 relative z-10">
               <div className="relative">
                  <div className="w-20 h-20 rounded-full bg-white border-2 border-primary/20 flex flex-col items-center justify-center shadow-sm">
-                    <span className="text-2xl font-black font-serif text-primary">88</span>
+                    <span className="text-2xl font-black font-serif text-primary">{aiScore}</span>
                     <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">/ 100</span>
                  </div>
                  <div className="absolute -bottom-2 -right-2 bg-primary text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow-md">AI Score</div>
@@ -87,9 +89,22 @@ const StudentDashboard = () => {
            </div>
 
            <div className="flex flex-col gap-3 w-full md:w-auto relative z-10">
-              <Button className="w-full md:w-auto rounded-full font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"><FileText className="w-4 h-4 mr-2" /> Update Resume</Button>
-              <Button variant="outline" className="w-full md:w-auto rounded-full font-bold border-primary/20 text-primary hover:bg-primary/5">View AI Insights</Button>
-           </div>
+  <Button
+    onClick={() => navigate("/dashboard/student/profile")}
+    className="w-full md:w-auto rounded-full font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
+  >
+    <FileText className="w-4 h-4 mr-2" />
+    Update Resume
+  </Button>
+
+  <Button
+  onClick={() => navigate("/dashboard/student/ai-insights")}
+  variant="outline"
+  className="w-full md:w-auto rounded-full font-bold border-primary/20 text-primary hover:bg-primary/5"
+>
+  View AI Insights
+</Button>
+</div>
         </motion.div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

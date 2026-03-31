@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Copy, MapPin, Building2, ExternalLink } from "lucide-react";
-
+import { useNavigate } from "react-router-dom";
 const apps = [
   { id: 1, company: "TCS", role: "Associate Engineer", status: "Applied", appliedOn: "Mar 20, 2026", nextStep: "Online Assessment" },
   { id: 2, company: "Infosys", role: "Systems Engineer", status: "Shortlisted", appliedOn: "Mar 15, 2026", nextStep: "Technical Interview" },
@@ -21,6 +21,7 @@ const getStatusColor = (status: string) => {
 };
 
 const StudentApplications = () => {
+  const navigate = useNavigate();
   return (
     <DashboardLayout role="student">
       <div className="space-y-8 max-w-5xl mx-auto">
@@ -39,7 +40,8 @@ const StudentApplications = () => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: i * 0.05 }}
-                className="p-6 md:p-8 hover:bg-secondary/30 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-6 group"
+                className="p-6 md:p-8 hover:bg-secondary/30 cursor-pointer transition-colors flex flex-col md:flex-row md:items-center justify-between gap-6 group"
+onClick={() => navigate("/dashboard/student/applications")}
               >
                 <div className="flex items-start md:items-center gap-5">
                    <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center font-bold text-primary border border-primary/10 shadow-sm shrink-0">
@@ -60,7 +62,10 @@ const StudentApplications = () => {
 
                 <div className="flex flex-col md:items-end gap-2 md:gap-1 bg-primary/5 rounded-xl p-4 md:p-0 md:bg-transparent text-sm">
                    <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">Next Action</p>
-                   <p className="font-bold text-primary flex items-center gap-2">
+                   <p
+  onClick={() => alert(`Next Step: ${app.nextStep}`)}
+  className="font-bold text-primary flex items-center gap-2 cursor-pointer"
+>
                        {app.nextStep} <ExternalLink className="w-3 h-3 text-primary/50" />
                    </p>
                 </div>
