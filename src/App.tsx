@@ -13,6 +13,8 @@ import StudentInterviews from "./pages/dashboard/StudentInterviews";
 import RecruiterDashboard from "./pages/dashboard/RecruiterDashboard";
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import NotFound from "./pages/NotFound";
+import { AuthProvider } from "@/auth/AuthProvider";
+import { RequireRole } from "@/auth/RequireRole";
 
 const queryClient = new QueryClient();
 
@@ -21,29 +23,117 @@ const App = () => (
     <TooltipProvider>
       <Sonner position="top-center" richColors />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
 
-          {/* Student Routes */}
-          <Route path="/dashboard/student" element={<StudentDashboard />} />
-          <Route path="/dashboard/student/profile" element={<StudentProfile />} />
-          <Route path="/dashboard/student/jobs" element={<StudentJobs />} />
-          <Route path="/dashboard/student/applications" element={<StudentApplications />} />
-          <Route path="/dashboard/student/interviews" element={<StudentInterviews />} />
-          <Route path="/dashboard/student/ai-insights" element={<div>AI Insights Page</div>} />
-          
-          {/* Recruiter Routes mapped to Sidebar */}
-          <Route path="/dashboard/recruiter" element={<RecruiterDashboard />} />
-          <Route path="/dashboard/recruiter/post-job" element={<RecruiterDashboard />} />
-          <Route path="/dashboard/recruiter/applicants" element={<RecruiterDashboard />} />
-          <Route path="/dashboard/recruiter/shortlisted" element={<RecruiterDashboard />} />
-          <Route path="/dashboard/recruiter/schedule" element={<RecruiterDashboard />} />
+            {/* Student Routes */}
+            <Route
+              path="/dashboard/student"
+              element={
+                <RequireRole role="student">
+                  <StudentDashboard />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/dashboard/student/profile"
+              element={
+                <RequireRole role="student">
+                  <StudentProfile />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/dashboard/student/jobs"
+              element={
+                <RequireRole role="student">
+                  <StudentJobs />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/dashboard/student/applications"
+              element={
+                <RequireRole role="student">
+                  <StudentApplications />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/dashboard/student/interviews"
+              element={
+                <RequireRole role="student">
+                  <StudentInterviews />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/dashboard/student/ai-insights"
+              element={
+                <RequireRole role="student">
+                  <div>AI Insights Page</div>
+                </RequireRole>
+              }
+            />
 
-          <Route path="/dashboard/admin/*" element={<AdminDashboard />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            {/* Recruiter Routes mapped to Sidebar */}
+            <Route
+              path="/dashboard/recruiter"
+              element={
+                <RequireRole role="recruiter">
+                  <RecruiterDashboard />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/dashboard/recruiter/post-job"
+              element={
+                <RequireRole role="recruiter">
+                  <RecruiterDashboard />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/dashboard/recruiter/applicants"
+              element={
+                <RequireRole role="recruiter">
+                  <RecruiterDashboard />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/dashboard/recruiter/shortlisted"
+              element={
+                <RequireRole role="recruiter">
+                  <RecruiterDashboard />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/dashboard/recruiter/schedule"
+              element={
+                <RequireRole role="recruiter">
+                  <RecruiterDashboard />
+                </RequireRole>
+              }
+            />
+
+            {/* Admin */}
+            <Route
+              path="/dashboard/admin/*"
+              element={
+                <RequireRole role="admin">
+                  <AdminDashboard />
+                </RequireRole>
+              }
+            />
+
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

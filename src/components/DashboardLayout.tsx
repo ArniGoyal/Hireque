@@ -12,6 +12,7 @@ import {
   Building2, Users, BarChart3, Settings, LogOut, ClipboardList, PlusCircle, UserCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useAuth } from "@/auth/AuthProvider";
 
 interface NavItem { title: string; url: string; icon: LucideIcon; }
 
@@ -50,6 +51,7 @@ function AppSidebar({ role }: { role: string }) {
   const collapsed = state === "collapsed";
   const nav = navMap[role] || navMap.student;
   const navigate = useNavigate();
+  const { signOut } = useAuth();
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
@@ -87,7 +89,10 @@ function AppSidebar({ role }: { role: string }) {
         <Button
           variant="ghost"
           className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent rounded-lg"
-          onClick={() => navigate("/")}
+          onClick={async () => {
+            await signOut();
+            navigate("/");
+          }}
         >
           <LogOut className="mr-2 h-4 w-4" />
           {!collapsed && "Log out"}

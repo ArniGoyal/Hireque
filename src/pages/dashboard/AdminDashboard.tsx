@@ -5,8 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Users, Building2, TrendingUp, Award, ArrowRight, Loader2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { listPendingStudents, verifyStudent } from "@/firebase/users";
 
 const placementData = [
   { month: "Jan", placed: 45 },
@@ -34,18 +35,32 @@ const initialCompanies = [
 
 const AdminDashboard = () => {
   const [companies, setCompanies] = useState(initialCompanies);
-  const [pendingVerifications, setPendingVerifications] = useState(42);
+  const [pendingVerifications, setPendingVerifications] = useState(0);
   const [isVerifying, setIsVerifying] = useState(false);
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     if (pendingVerifications === 0) return;
     setIsVerifying(true);
-    toast("Running AI Verification Module", { description: "Cross-referencing 42 student profiles via database." });
-    setTimeout(() => {
-        setIsVerifying(false);
-        setPendingVerifications(0);
-        toast.success("All Profiles Verified!", { description: "Student accounts activated and onboarded successfully." });
-    }, 2500);
+    toast("Running Verification Module", { description: "Updating Firestore student verification status..." });
+
+    try {
+      const pending = await listPendingStudents();
+      for (const student of pending) {
+        await verifyStudent(student.uid);
+      }
+      setPendingVerifications(0);
+      toast.success("All Profiles Verified!", {
+        description: "Student accounts activated and onboarded successfully.",
+      });
+    } catch (err) {
+      toast({
+        title: "Verification failed",
+        description: err instanceof Error ? err.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   const handleAddCompany = () => {
@@ -57,6 +72,18 @@ const AdminDashboard = () => {
   const handleManage = (companyName: string) => {
     toast(`Managing ${companyName}`, { description: "Opening company configurations..." });
   };
+
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const pending = await listPendingStudents();
+        setPendingVerifications(pending.length);
+      } catch {
+        // keep existing UI; verification area will still work
+      }
+    };
+    run();
+  }, []);
 
   return (
     <DashboardLayout role="admin">
