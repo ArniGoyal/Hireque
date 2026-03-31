@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { signInWithGoogle, signUp } from "@/firebase/auth";
+import { useAuth } from "@/auth/AuthProvider";
 
 const Signup = () => {
   const [name, setName] = useState("");
@@ -28,9 +29,25 @@ const Signup = () => {
   const [role, setRole] = useState<"student" | "recruiter" | "admin">("student");
   const [isLoading, setIsLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [pendingRole, setPendingRole] = useState<string | null>(null);
   
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { loading: authLoading, role: userRole } = useAuth();
+
+  // Wait for profile to load after signup before navigating
+  useEffect(() => {
+    if (!pendingRole) return;
+
+    // Navigate if:
+    // 1. Role matches (profile loaded successfully), OR
+    // 2. We have a role and loading is complete (timeout reached)
+    if (userRole === pendingRole || (!authLoading && userRole)) {
+      console.log("Navigating to dashboard:", pendingRole);
+      navigate(`/dashboard/${pendingRole}`);
+      setPendingRole(null);
+    }
+  }, [authLoading, userRole, pendingRole, navigate]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +64,8 @@ const Signup = () => {
     try {
       await signUp({ email, password, role, name });
       toast({ title: "Account created!", description: `Welcome to Hireque as ${role}.` });
-      navigate(`/dashboard/${role}`);
+      // Set pending role and let useEffect handle navigation once profile loads
+      setPendingRole(role);
     } catch (err) {
       toast({
         title: "Signup failed",
@@ -73,7 +91,8 @@ const Signup = () => {
     try {
       await signInWithGoogle({ role });
       toast({ title: "Account created!", description: `Welcome to Hireque as ${role}.` });
-      navigate(`/dashboard/${role}`);
+      // Set pending role and let useEffect handle navigation once profile loads
+      setPendingRole(role);
     } catch (err) {
       toast({
         title: "Google sign-up failed",

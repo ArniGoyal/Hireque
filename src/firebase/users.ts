@@ -30,11 +30,18 @@ export async function createUserProfile(args: {
 
   const payload: Partial<UserProfileDoc> = {
     ...base,
-    student: role === "student" ? ({ verified: false } satisfies StudentProfile) : undefined,
-    recruiter:
-      role === "recruiter" ? ({ companyName: name } satisfies RecruiterProfile) : undefined,
-    admin: role === "admin" ? {} : undefined,
   };
+
+  // Only add role-specific fields if they match the user's role
+  if (role === "student") {
+    payload.student = { verified: false } satisfies StudentProfile;
+  }
+  if (role === "recruiter") {
+    payload.recruiter = { companyName: name } satisfies RecruiterProfile;
+  }
+  if (role === "admin") {
+    payload.admin = {};
+  }
 
   // Use merge so re-signups don't blow away existing profile edits.
   await setDoc(userDocRef(uid), payload, { merge: true });

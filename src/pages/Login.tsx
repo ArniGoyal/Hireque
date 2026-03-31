@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ensureUserProfile, signIn, signInWithGoogle } from "@/firebase/auth";
+import { useAuth } from "@/auth/AuthProvider";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -25,8 +26,24 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<"student" | "recruiter" | "admin">("student");
   const [isLoading, setIsLoading] = useState(false);
+  const [pendingRole, setPendingRole] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { loading: authLoading, role: userRole } = useAuth();
+
+  // Wait for profile to load after login before navigating
+  useEffect(() => {
+    if (!pendingRole) return;
+
+    // Navigate if:
+    // 1. Role matches (profile loaded successfully), OR
+    // 2. We have a role and loading is complete (timeout reached)
+    if (userRole === pendingRole || (!authLoading && userRole)) {
+      console.log("Navigating to dashboard:", pendingRole);
+      navigate(`/dashboard/${pendingRole}`);
+      setPendingRole(null);
+    }
+  }, [authLoading, userRole, pendingRole, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +57,8 @@ const Login = () => {
         name: signedInEmail.includes("@") ? signedInEmail.split("@")[0] : "User",
       });
       toast({ title: "Welcome back!", description: `Signed in as ${role}.` });
-      navigate(`/dashboard/${role}`);
+      // Set pending role and let useEffect handle navigation once profile loads
+      setPendingRole(role);
     } catch (err) {
       toast({
         title: "Login failed",
@@ -57,7 +75,8 @@ const Login = () => {
     try {
       await signInWithGoogle({ role });
       toast({ title: "Welcome!", description: `Signed in with Google as ${role}.` });
-      navigate(`/dashboard/${role}`);
+      // Set pending role and let useEffect handle navigation once profile loads
+      setPendingRole(role);
     } catch (err) {
       toast({
         title: "Google sign-in failed",

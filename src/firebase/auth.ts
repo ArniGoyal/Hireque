@@ -24,19 +24,29 @@ export function listenToAuthStateChanges(cb: (user: AuthenticatedUser | null) =>
 }
 
 export async function signUp(args: { email: string; password: string; role: AppRole; name: string }) {
-  const cred = await createUserWithEmailAndPassword(auth, args.email, args.password);
-  await createUserProfile({
-    uid: cred.user.uid,
-    email: cred.user.email ?? args.email,
-    role: args.role,
-    name: args.name,
-  });
-  return { uid: cred.user.uid, email: cred.user.email ?? args.email };
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, args.email, args.password);
+    await createUserProfile({
+      uid: cred.user.uid,
+      email: cred.user.email ?? args.email,
+      role: args.role,
+      name: args.name,
+    });
+    return { uid: cred.user.uid, email: cred.user.email ?? args.email };
+  } catch (error) {
+    console.error("Sign up error:", error);
+    throw error;
+  }
 }
 
 export async function signIn(args: { email: string; password: string }) {
-  const cred = await signInWithEmailAndPassword(auth, args.email, args.password);
-  return { uid: cred.user.uid, email: cred.user.email ?? args.email };
+  try {
+    const cred = await signInWithEmailAndPassword(auth, args.email, args.password);
+    return { uid: cred.user.uid, email: cred.user.email ?? args.email };
+  } catch (error) {
+    console.error("Sign in error:", error);
+    throw error;
+  }
 }
 
 export async function ensureUserProfile(args: {

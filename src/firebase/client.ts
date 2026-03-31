@@ -23,6 +23,11 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID as string | undefined,
 };
 
+console.log("Firebase Config Loaded:", { 
+  projectId: firebaseConfig.projectId, 
+  authDomain: firebaseConfig.authDomain 
+});
+
 const app =
   getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
 

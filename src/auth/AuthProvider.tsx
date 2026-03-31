@@ -25,6 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let unsubProfile: (() => void) | undefined;
 
     const unsubAuth = listenToAuthStateChanges((authUser) => {
+      console.log("Auth state changed:", authUser?.email);
       setUser(authUser);
 
       // Clean up any previous profile subscription.
@@ -35,14 +36,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!authUser) {
         setProfile(null);
+        localStorage.removeItem("pendingUserRole");
         setLoading(false);
         return;
       }
 
       setLoading(true);
       const ref = doc(db, "users", authUser.uid);
+      
+      // Set a timeout to stop loading after 3 seconds regardless
+      const loadingTimeout = setTimeout(() => {
+        console.warn("Profile loading timeout - stopping loading state");
+        setLoading(false);
+      }, 3000);
+      
       unsubProfile = onSnapshot(ref, (snap) => {
-        setProfile(snap.exists() ? (snap.data() as UserProfileDoc) : null);
+        clearTimeout(loadingTimeout);
+        console.log("Profile loaded:", snap.exists(), snap.data());
+        const profileData = snap.exists() ? (snap.data() as UserProfileDoc) : null;
+        setProfile(profileData);
+        
+        // Store role in localStorage as fallback
+        if (profileData?.role) {
+          localStorage.setItem("pendingUserRole", profileData.role);
+        }
+        
+        setLoading(false);
+      }, (error) => {
+        clearTimeout(loadingTimeout);
+        console.error("Error loading profile:", error);
+        setProfile(null);
         setLoading(false);
       });
     });
@@ -54,8 +77,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo<AuthContextValue>(() => {
-    const role = profile?.role ?? null;
+    // Try to get role from profile, fallback to localStorage if profile hasn't loaded
+    let role = profile?.role ?? null;
+    
+    if (!role && user) {
+      // If user is authenticated but profile hasn't loaded, check localStorage
+      const storedRole = localStorage.getItem("pendingUserRole");
+      if (storedRole) {
+        console.log("Using stored role from localStorage:", storedRole);
+        role = storedRole as AppRole;
+      }
+    }
+    
     const isStudentVerified = profile?.student?.verified ?? false;
+
+    console.log("Auth context value:", { 
+      loading, 
+      hasUser: !!user, 
+      hasProfile: !!profile, 
+      role,
+      userEmail: user?.email 
+    });
 
     return {
       loading,
@@ -64,6 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       role,
       isStudentVerified,
       signOut: async () => {
+        localStorage.removeItem("pendingUserRole");
         await signOutUser();
       },
     };
