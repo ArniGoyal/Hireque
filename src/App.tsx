@@ -13,7 +13,7 @@ import StudentInterviews from "./pages/dashboard/StudentInterviews";
 import RecruiterDashboard from "./pages/dashboard/RecruiterDashboard";
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import NotFound from "./pages/NotFound";
-import StudentAIInsights from "./pages/dashboard/StudentAIInsights";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -33,7 +33,7 @@ const App = () => (
           <Route path="/dashboard/student/applications" element={<StudentApplications />} />
           <Route path="/dashboard/student/interviews" element={<StudentInterviews />} />
           <Route path="/dashboard/student/ai-insights" element={<div>AI Insights Page</div>} />
-          <Route path="/dashboard/student/ai-insights" element={<StudentAIInsights />} />
+          
           {/* Recruiter Routes mapped to Sidebar */}
           <Route path="/dashboard/recruiter" element={<RecruiterDashboard />} />
           <Route path="/dashboard/recruiter/post-job" element={<RecruiterDashboard />} />

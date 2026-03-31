@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Briefcase, Search, Filter } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useState } from "react";
+
 const allJobs = [
   { id: 1, company: "Google", role: "SDE Intern", package: "₹45 LPA", type: "Internship", deadline: "Apr 5, 2026", eligible: true },
   { id: 2, company: "Microsoft", role: "Software Engineer", package: "₹38 LPA", type: "Full Time", deadline: "Apr 8, 2026", eligible: true },
@@ -28,7 +28,7 @@ const StudentJobs = () => {
   // remove job after applying (optional UX)
   setJobs(jobs.filter(j => j.id !== id));
 };
-const [jobs, setJobs] = useState(allJobs);
+
 const [search, setSearch] = useState("");
 const [filterEligible, setFilterEligible] = useState(false);
 const filteredJobs = jobs.filter((job) => {
