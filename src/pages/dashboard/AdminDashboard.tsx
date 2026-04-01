@@ -1,252 +1,680 @@
-import { motion } from "framer-motion";
-import DashboardLayout from "@/components/DashboardLayout";
-import StatCard from "@/components/StatCard";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Users, Building2, TrendingUp, Award, ArrowRight, Loader2 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import { listPendingStudents, verifyStudent } from "@/firebase/users";
+import { useState } from "react";
+import {
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
+} from "recharts";
 
-const placementData = [
-  { month: "Jan", placed: 45 },
-  { month: "Feb", placed: 62 },
-  { month: "Mar", placed: 78 },
-  { month: "Apr", placed: 120 },
-  { month: "May", placed: 95 },
-  { month: "Jun", placed: 140 },
+// ─── DATA ────────────────────────────────────────────────────────────────────
+
+const initialCompanies = [
+  { id: 1, name: "Google", sector: "Tech", package: 32, openRoles: 3, status: "Verified", joined: "2024-01-10" },
+  { id: 2, name: "Microsoft", sector: "Tech", package: 28, openRoles: 5, status: "Verified", joined: "2024-01-15" },
+  { id: 3, name: "Deloitte", sector: "Consulting", package: 14, openRoles: 8, status: "Verified", joined: "2024-02-01" },
+  { id: 4, name: "Infosys", sector: "IT Services", package: 8, openRoles: 20, status: "Verified", joined: "2024-02-10" },
+  { id: 5, name: "Zomato", sector: "Startup", package: 18, openRoles: 2, status: "Pending", joined: "2024-03-05" },
+  { id: 6, name: "KPMG", sector: "Consulting", package: 12, openRoles: 6, status: "Pending", joined: "2024-03-20" },
+];
+
+const initialStudents = [
+  { id: 101, name: "Priya Sharma", branch: "CSE", cgpa: 9.2, status: "Placed", company: "Google", package: 32 },
+  { id: 102, name: "Arjun Mehta", branch: "IT", cgpa: 8.8, status: "Placed", company: "Microsoft", package: 28 },
+  { id: 103, name: "Sneha Reddy", branch: "CSE", cgpa: 9.5, status: "Placed", company: "Deloitte", package: 14 },
+  { id: 104, name: "Karan Singh", branch: "ECE", cgpa: 8.6, status: "Unplaced", company: "-", package: 0 },
+  { id: 105, name: "Ananya Gupta", branch: "IT", cgpa: 9.1, status: "Placed", company: "Zomato", package: 18 },
+  { id: 106, name: "Ishaan Malhotra", branch: "CSE", cgpa: 8.4, status: "Pending", company: "-", package: 0 },
+  { id: 107, name: "Riya Verma", branch: "MAE", cgpa: 8.9, status: "Placed", company: "Infosys", package: 8 },
+  { id: 108, name: "Sahil Kapoor", branch: "IT", cgpa: 8.2, status: "Unplaced", company: "-", package: 0 },
+  { id: 109, name: "Mehak Jain", branch: "CSE", cgpa: 9.7, status: "Placed", company: "Google", package: 32 },
+  { id: 110, name: "Vikram Das", branch: "ECE", cgpa: 8.7, status: "Pending", company: "-", package: 0 },
+];
+
+const initialJobs = [
+  { id: 1, role: "SDE Intern", company: "Google", type: "Internship", package: 32, status: "Active", applicants: 48, posted: "2024-03-01" },
+  { id: 2, role: "Data Analyst", company: "Microsoft", type: "Full-time", package: 28, status: "Active", applicants: 32, posted: "2024-03-05" },
+  { id: 3, role: "Business Analyst", company: "Deloitte", type: "Full-time", package: 14, status: "Closed", applicants: 67, posted: "2024-02-15" },
+  { id: 4, role: "Systems Engineer", company: "Infosys", type: "Full-time", package: 8, status: "Active", applicants: 120, posted: "2024-03-10" },
+  { id: 5, role: "Product Manager", company: "Zomato", type: "Full-time", package: 18, status: "Paused", applicants: 22, posted: "2024-03-18" },
+];
+
+const trendData = [
+  { month: "Aug", placed: 5, target: 20 }, { month: "Sep", placed: 18, target: 40 },
+  { month: "Oct", placed: 34, target: 60 }, { month: "Nov", placed: 52, target: 80 },
+  { month: "Dec", placed: 71, target: 100 }, { month: "Jan", placed: 89, target: 120 },
+  { month: "Feb", placed: 112, target: 140 }, { month: "Mar", placed: 134, target: 160 },
+];
+
+const pkgData = [
+  { range: "<8 LPA", count: 12 }, { range: "8–12", count: 28 },
+  { range: "12–20", count: 19 }, { range: "20–30", count: 8 }, { range: ">30", count: 4 },
 ];
 
 const branchData = [
-  { name: "CSE", value: 420, color: "#193c28" },
-  { name: "IT", value: 280, color: "#2e5c40" },
-  { name: "ECE", value: 190, color: "#3c7a54" },
-  { name: "ME", value: 130, color: "#d4cbb8" },
-  { name: "EE", value: 100, color: "#a89f8d" },
+  { name: "CSE", value: 42 }, { name: "IT", value: 28 },
+  { name: "ECE", value: 16 }, { name: "MAE", value: 8 }, { name: "Other", value: 6 },
 ];
 
-const initialCompanies = [
-  { id: 1, name: "Vertex", openings: 5, status: "Active", visits: "Apr 10, 2026" },
-  { id: 2, name: "Microsoft", openings: 3, status: "Active", visits: "Apr 14, 2026" },
-  { id: 3, name: "Pinnacle", openings: 8, status: "Upcoming", visits: "Apr 20, 2026" },
-  { id: 4, name: "Nova Corp", openings: 12, status: "Completed", visits: "Mar 28, 2026" },
+const PIE_COLORS = ["#1f3d2b", "#06b6d4", "#f59e0b", "#2e7d5b", "#f43f5e"];
+
+const INITIAL_NOTIFS = [
+  { id: 1, icon: "🏢", text: "Zomato registered as new company", time: "2m ago", unread: true },
+  { id: 2, icon: "👤", text: "2 students pending verification", time: "15m ago", unread: true },
+  { id: 3, icon: "📋", text: "Google posted a new job role", time: "1h ago", unread: false },
+  { id: 4, icon: "✅", text: "KPMG verification approved", time: "3h ago", unread: false },
 ];
 
-const AdminDashboard = () => {
-  const [companies, setCompanies] = useState(initialCompanies);
-  const [pendingVerifications, setPendingVerifications] = useState(0);
-  const [isVerifying, setIsVerifying] = useState(false);
+// ─── SVG ICON ────────────────────────────────────────────────────────────────
 
-  const handleVerify = async () => {
-    if (pendingVerifications === 0) return;
-    setIsVerifying(true);
-    toast("Running Verification Module", { description: "Updating Firestore student verification status..." });
+const Ic = ({ d, size = 18, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+    stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d={d} />
+  </svg>
+);
 
-    try {
-      const pending = await listPendingStudents();
-      for (const student of pending) {
-        await verifyStudent(student.uid);
-      }
-      setPendingVerifications(0);
-      toast.success("All Profiles Verified!", {
-        description: "Student accounts activated and onboarded successfully.",
-      });
-    } catch (err) {
-      toast({
-        title: "Verification failed",
-        description: err instanceof Error ? err.message : "Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsVerifying(false);
-    }
+const ic = {
+  analytics: "M18 20V10 M12 20V4 M6 20v-6",
+  companies: "M3 9h18v10a2 2 0 01-2 2H5a2 2 0 01-2-2V9z M8 9V5a2 2 0 012-2h4a2 2 0 012 2v4",
+  students: "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2 M9 7a4 4 0 100 8 4 4 0 000-8 M23 21v-2a4 4 0 00-3-3.87 M16 3.13a4 4 0 010 7.75",
+  jobs: "M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z",
+  bell: "M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 01-3.46 0",
+  plus: "M12 5v14M5 12h14",
+  trash: "M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6",
+  check: "M20 6L9 17l-5-5",
+  xmark: "M18 6L6 18M6 6l12 12",
+  search: "M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0",
+  shield: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
+  trending: "M23 6l-9.5 9.5-5-5L1 18",
+  users: "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8M23 21v-2a3 3 0 00-5-2.239M16 3.13a4 4 0 010 7.75",
+  box: "M12 2l10 6.5v7L12 22 2 15.5v-7L12 2zM12 22V9M2 8.5l10 6.5 10-6.5",
+  pause: "M10 4H6v16h4V4zM18 4h-4v16h4V4z",
+  settings: "M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z",
+  logout: "M17 16l4-4-4-4M21 12H9M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4",
+  user: "M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8",
+};
+
+// ─── SMALL COMPONENTS ────────────────────────────────────────────────────────
+
+const Badge = ({ children, color = "gray" }) => {
+  const m = {
+    green:  { bg: "#dce7de", tx: "#1f5c45" },
+    red:    { bg: "#fee2e2", tx: "#991b1b" },
+    amber:  { bg: "#fef3c7", tx: "#92400e" },
+    blue:   { bg: "#dbeafe", tx: "#1e40af" },
+    gray:   { bg: "#f3f4f6", tx: "#374151" },
+    purple: { bg: "#ede9fe", tx: "#5b21b6" },
   };
+  const c = m[color] || m.gray;
+  return <span style={{ background: c.bg, color: c.tx, fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 100, whiteSpace: "nowrap" }}>{children}</span>;
+};
 
-  const handleAddCompany = () => {
-    const newCompany = { id: Date.now(), name: "Stripe", openings: 10, status: "Upcoming", visits: "May 1, 2026" };
-    setCompanies([newCompany, ...companies]);
-    toast.success("Stripe Onboarded", { description: "New partnership active. Company portal access granted." });
+const StatCard = ({ label, value, sub, icon, accent }) => (
+  <div style={{ background: "#f5f7f5", borderRadius: 20, padding: "1.4rem 1.6rem", border: "1px solid #dcdedc", display: "flex", flexDirection: "column", gap: 14, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", position: "relative", overflow: "hidden" }}>
+    <div style={{ position: "absolute", top: 0, right: 0, width: 90, height: 90, background: accent + "12", borderRadius: "0 20px 0 100%" }} />
+    <div style={{ width: 44, height: 44, borderRadius: 14, background: accent + "18", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
+      <Ic d={icon} size={20} color={accent} />
+    </div>
+    <div style={{ zIndex: 1 }}>
+      <div style={{ fontSize: 30, fontWeight: 700, color: "#1f2a23", letterSpacing: -1 }}>{value}</div>
+      <div style={{ fontSize: 13, color: "#5f6f63", marginTop: 2 }}>{label}</div>
+      {sub && <div style={{ fontSize: 11, color: accent, marginTop: 4, fontWeight: 600 }}>{sub}</div>}
+    </div>
+  </div>
+);
+
+const Overlay = ({ onClose, children }) => (
+  <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={onClose}>
+    <div style={{ background: "#fff", borderRadius: 24, padding: "2rem", width: "100%", maxWidth: 480, boxShadow: "0 25px 60px rgba(0,0,0,0.15)" }} onClick={e => e.stopPropagation()}>
+      {children}
+    </div>
+  </div>
+);
+
+const ModalHeader = ({ title, onClose }) => (
+  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+    <h3 style={{ fontSize: 20, fontWeight: 700, color: "#1f2a23", margin: 0 }}>{title}</h3>
+    <button onClick={onClose} style={{ border: "none", background: "#f3f4f6", borderRadius: "50%", width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <Ic d={ic.xmark} size={16} color="#6b7280" />
+    </button>
+  </div>
+);
+
+const FInput = ({ label, ...p }) => (
+  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+    {label && <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</label>}
+    <input {...p} style={{ padding: "10px 14px", border: "1.5px solid #d6dad6", borderRadius: 12, fontSize: 14, outline: "none", color: "#1f2a23", ...(p.style || {}) }}
+      onFocus={e => e.target.style.borderColor = "#1f3d2b"}
+      onBlur={e => e.target.style.borderColor = "#d6dad6"} />
+  </div>
+);
+
+const FSel = ({ label, children, ...p }) => (
+  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+    {label && <label style={{ fontSize: 12, fontWeight: 600, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</label>}
+    <select {...p} style={{ padding: "10px 14px", border: "1.5px solid #d6dad6", borderRadius: 12, fontSize: 14, outline: "none", color: "#1f2a23", background: "#fff", cursor: "pointer" }}>{children}</select>
+  </div>
+);
+
+const Btn = ({ children, variant = "primary", onClick, style: sx = {} }) => {
+  const vs = {
+    primary: { background: "#1f3d2b", color: "#fff", border: "none" },
+    secondary: { background: "#f3f4f6", color: "#374151", border: "1px solid #d6dad6" },
+    danger: { background: "#fee2e2", color: "#991b1b", border: "none" },
   };
-
-  const handleManage = (companyName: string) => {
-    toast(`Managing ${companyName}`, { description: "Opening company configurations..." });
-  };
-
-  useEffect(() => {
-    const run = async () => {
-      try {
-        const pending = await listPendingStudents();
-        setPendingVerifications(pending.length);
-      } catch {
-        // keep existing UI; verification area will still work
-      }
-    };
-    run();
-  }, []);
-
   return (
-    <DashboardLayout role="admin">
-      <div className="space-y-8">
-        <div className="flex justify-between items-end">
-          <div>
-            <h1 className="text-3xl font-serif font-extrabold tracking-tighter text-primary">Admin Control Center</h1>
-            <p className="text-muted-foreground mt-2 font-medium">Verify students, manage companies, and monitor overall velocity.</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard icon={Users} title="Total Students Placed" value="5,240" trend="+180 this sem" trendUp index={0} />
-          <StatCard icon={Building2} title="Companies Visiting" value={342 + (companies.length - 4)} index={1} />
-          <StatCard icon={TrendingUp} title="Placement %" value="92%" trend="+4% vs last year" trendUp index={2} />
-          <StatCard icon={Award} title="Highest Package" value="₹62 LPA" index={3} />
-        </div>
-
-        {/* Charts */}
-        <div className="grid lg:grid-cols-2 gap-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="bg-white border border-primary/10 rounded-3xl p-8 shadow-sm"
-          >
-            <h3 className="font-serif font-bold text-xl text-primary mb-6">Monthly Placements</h3>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={placementData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(25, 60, 40, 0.05)" />
-                <XAxis dataKey="month" tick={{ fontSize: 12, fontWeight: 700 }} stroke="#a89f8d" />
-                <YAxis tick={{ fontSize: 12, fontWeight: 700 }} stroke="#a89f8d" />
-                <Tooltip
-                  contentStyle={{
-                    background: "#ffffff",
-                    border: "1px solid rgba(25, 60, 40, 0.1)",
-                    borderRadius: "16px",
-                    boxShadow: "0 10px 25px -5px rgba(0,0,0,0.05)",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: "#193c28",
-                  }}
-                  itemStyle={{ color: "#193c28", fontWeight: "bold" }}
-                />
-                <Bar dataKey="placed" fill="#193c28" radius={[8, 8, 8, 8]} barSize={24} />
-              </BarChart>
-            </ResponsiveContainer>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
-            className="bg-white border border-primary/10 rounded-3xl p-8 shadow-sm flex flex-col"
-          >
-            <h3 className="font-serif font-bold text-xl text-primary mb-6">Placements by Branch</h3>
-            <div className="flex-1 flex justify-center items-center">
-              <ResponsiveContainer width="100%" height={260}>
-                <PieChart>
-                  <Pie
-                    data={branchData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={70}
-                    outerRadius={110}
-                    paddingAngle={3}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {branchData.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      background: "#ffffff",
-                      border: "1px solid rgba(25, 60, 40, 0.1)",
-                      borderRadius: "16px",
-                      boxShadow: "0 10px 25px -5px rgba(0,0,0,0.05)",
-                      fontSize: 13,
-                      fontWeight: 700,
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex flex-wrap gap-4 justify-center mt-6">
-              {branchData.map((b) => (
-                <div key={b.name} className="flex items-center gap-2 text-[12px] text-muted-foreground font-bold uppercase tracking-widest">
-                  <span className="w-3 h-3 rounded-full" style={{ background: b.color }} />
-                  {b.name}
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Action Panel */}
-        <div className="grid lg:grid-cols-3 gap-8">
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.6 }}
-                className="bg-white border border-primary/10 rounded-3xl overflow-hidden shadow-sm lg:col-span-2"
-            >
-                <div className="flex items-center justify-between p-6 border-b border-primary/5">
-                <div>
-                   <h3 className="font-serif font-bold text-xl text-primary">Company Partnerships</h3>
-                   <p className="text-[13px] text-muted-foreground font-medium mt-1">Manage and verify visiting recruiters.</p>
-                </div>
-                <Button onClick={handleAddCompany} size="sm" className="rounded-full shadow-lg shadow-primary/20 font-bold bg-primary text-white">Add Company</Button>
-                </div>
-                <div className="divide-y divide-primary/5 max-h-[350px] overflow-y-auto no-scrollbar">
-                {companies.map((c, i) => (
-                    <motion.div
-                    key={c.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.7 + i * 0.08 }}
-                    className="flex items-center justify-between p-5 px-6 hover:bg-secondary/30 transition-colors"
-                    >
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center font-bold text-primary border border-primary/10 shadow-sm text-lg font-serif">
-                           {c.name.charAt(0)}
-                        </div>
-                        <div>
-                        <p className="font-bold text-[15px] text-primary">{c.name}</p>
-                        <p className="text-[13px] text-muted-foreground font-medium mt-0.5">{c.openings} Openings · Visits: {c.visits}</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <Badge variant="outline" className={`rounded-full font-bold px-4 border text-[11px] uppercase tracking-widest bg-transparent ${c.status === 'Active' ? 'text-green-700 border-green-700/20' : c.status === 'Upcoming' ? 'text-primary border-primary/30' : 'text-muted-foreground border-primary/10'}`}>{c.status}</Badge>
-                        <Button onClick={() => handleManage(c.name)} variant="ghost" size="sm" className="font-bold text-primary hover:bg-secondary">Manage</Button>
-                    </div>
-                    </motion.div>
-                ))}
-                </div>
-            </motion.div>
-
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.7 }}
-                className="bg-primary border border-primary rounded-3xl p-8 shadow-xl flex flex-col items-start justify-center text-left relative overflow-hidden"
-            >
-                 <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
-                 <Users className="w-12 h-12 text-white/80 mb-6 relative z-10" />
-                 <h3 className="text-3xl font-serif font-extrabold text-white mb-3 relative z-10 leading-tight">Student<br/>Verification</h3>
-                 <p className="text-white/60 font-medium text-[14px] mb-8 relative z-10">
-                    {pendingVerifications > 0 
-                      ? `${pendingVerifications} new student profiles require manual administrative verification.` 
-                      : "All queued student profiles have been verified!"}
-                 </p>
-                 <Button onClick={handleVerify} disabled={isVerifying || pendingVerifications === 0} className="w-full h-12 rounded-full bg-white text-primary font-extrabold shadow-lg hover:bg-white/90 relative z-10 disabled:opacity-80 disabled:hover:bg-white">
-                    {isVerifying ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : ''} 
-                    {isVerifying ? 'Verifying DB...' : pendingVerifications === 0 ? 'Verified' : 'Verify Pending Profiles'} 
-                    {pendingVerifications > 0 && !isVerifying && <ArrowRight className="w-4 h-4 ml-2" />}
-                 </Button>
-            </motion.div>
-        </div>
-      </div>
-    </DashboardLayout>
+    <button onClick={onClick} style={{ ...vs[variant], padding: "9px 18px", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "inherit", ...sx }}
+      onMouseEnter={e => e.currentTarget.style.opacity = "0.82"}
+      onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+      {children}
+    </button>
   );
 };
 
-export default AdminDashboard;
+const SearchBar = ({ value, onChange, placeholder }) => (
+  <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#fff", border: "1px solid #d6dad6", borderRadius: 14, padding: "10px 16px" }}>
+    <Ic d={ic.search} size={16} color="##8a948c" />
+    <input value={value} onChange={onChange} placeholder={placeholder} style={{ border: "none", outline: "none", fontSize: 14, color: "#1f2a23", flex: 1, background: "transparent", fontFamily: "inherit" }} />
+  </div>
+);
+
+const TH = ({ children }) => (
+  <th style={{ padding: "12px 16px", fontSize: 11, fontWeight: 700, color: "##8a948c", textTransform: "uppercase", letterSpacing: "0.05em", textAlign: "left" }}>{children}</th>
+);
+
+// ─── ANALYTICS PAGE ──────────────────────────────────────────────────────────
+
+const AnalyticsPage = ({ students, companies }) => {
+  const placed = students.filter(s => s.status === "Placed");
+  const pct = Math.round((placed.length / students.length) * 100);
+  const highest = Math.max(...placed.map(s => s.package));
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+      <div>
+        <h2 style={{ fontSize: 26, fontWeight: 700, color: "#1f2a23", letterSpacing: -0.5, margin: 0 }}>Analytics Dashboard</h2>
+        <p style={{ color: "#6b7280", fontSize: 14, marginTop: 4 }}>Placement season at a glance — batch 2024</p>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
+        <StatCard label="Students Placed" value={placed.length} sub={`${pct}% of batch`} icon={ic.users} accent="#1f3d2b" />
+        <StatCard label="Companies Visiting" value={companies.length} sub={`${companies.filter(c => c.status === "Verified").length} verified`} icon={ic.companies} accent="#06b6d4" />
+        <StatCard label="Highest Package" value={`${highest} LPA`} sub="Google · CSE" icon={ic.box} accent="#f59e0b" />
+        <StatCard label="Placement %" value={`${pct}%`} sub="↑ 12% vs last year" icon={ic.trending} accent="#2e7d5b" />
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 20 }}>
+        <div style={{ background: "#fff", borderRadius: 20, padding: "1.5rem", border: "1px solid #dcdedc" }}>
+          <h4 style={{ fontSize: 15, fontWeight: 700, color: "#1f2a23", margin: "0 0 20px" }}>Placement trend</h4>
+          <ResponsiveContainer width="100%" height={240}>
+            <LineChart data={trendData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#dcdedc" />
+              <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#8a948c" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 12, fill: "#8a948c" }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #dcdedc", fontSize: 13 }} />
+              <Line type="monotone" dataKey="placed" stroke="#1f3d2b" strokeWidth={2.5} dot={{ fill: "#1f3d2b", r: 4 }} name="Placed" />
+              <Line type="monotone" dataKey="target" stroke="#d6dad6" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Target" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        <div style={{ background: "#fff", borderRadius: 20, padding: "1.5rem", border: "1px solid #dcdedc" }}>
+          <h4 style={{ fontSize: 15, fontWeight: 700, color: "#1f2a23", margin: "0 0 20px" }}>Branch-wise placement</h4>
+          <ResponsiveContainer width="100%" height={240}>
+            <PieChart>
+              <Pie data={branchData} cx="50%" cy="50%" innerRadius={55} outerRadius={90} dataKey="value" paddingAngle={3}>
+                {branchData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+              </Pie>
+              <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #dcdedc", fontSize: 13 }} />
+              <Legend iconType="circle" iconSize={10} wrapperStyle={{ fontSize: 12 }} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+      <div style={{ background: "#fff", borderRadius: 20, padding: "1.5rem", border: "1px solid #dcdedc" }}>
+        <h4 style={{ fontSize: 15, fontWeight: 700, color: "#1f2a23", margin: "0 0 20px" }}>Package distribution</h4>
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={pkgData} barCategoryGap="30%">
+            <CartesianGrid strokeDasharray="3 3" stroke="#dcdedc" vertical={false} />
+            <XAxis dataKey="range" tick={{ fontSize: 12, fill: "#8a948c" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 12, fill: "#8a948c" }} axisLine={false} tickLine={false} />
+            <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #dcdedc", fontSize: 13 }} />
+            <Bar dataKey="count" fill="#1f3d2b" radius={[8, 8, 0, 0]} name="Students" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
+// ─── COMPANIES PAGE ───────────────────────────────────────────────────────────
+
+const CompaniesPage = ({ companies, setCompanies, showToast }) => {
+  const [modal, setModal] = useState(false);
+  const [search, setSearch] = useState("");
+  const [form, setForm] = useState({ name: "", sector: "", package: "", openRoles: "", status: "Pending" });
+
+  const filtered = companies.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.sector.toLowerCase().includes(search.toLowerCase()));
+
+  const add = () => {
+    if (!form.name || !form.sector) return showToast("Fill required fields", "error");
+    setCompanies(p => [...p, { id: Date.now(), ...form, package: +form.package || 0, openRoles: +form.openRoles || 0, joined: new Date().toISOString().split("T")[0] }]);
+    setModal(false); setForm({ name: "", sector: "", package: "", openRoles: "", status: "Pending" });
+    showToast("Company added!", "success");
+  };
+  const remove = id => { setCompanies(p => p.filter(c => c.id !== id)); showToast("Company removed", "error"); };
+  const verify = id => { setCompanies(p => p.map(c => c.id === id ? { ...c, status: "Verified" } : c)); showToast("Company verified!", "success"); };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h2 style={{ fontSize: 26, fontWeight: 700, color: "#1f2a23", letterSpacing: -0.5, margin: 0 }}>Companies</h2>
+          <p style={{ color: "#6b7280", fontSize: 14, marginTop: 4 }}>{companies.length} registered · {companies.filter(c => c.status === "Verified").length} verified</p>
+        </div>
+        <Btn onClick={() => setModal(true)}><Ic d={ic.plus} size={16} color="#fff" /> Add Company</Btn>
+      </div>
+      <SearchBar value={search} onChange={e => setSearch(e.target.value)} placeholder="Search companies or sector..." />
+      <div style={{ background: "#fff", borderRadius: 20, border: "1px solid #dcdedc", overflow: "hidden" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead><tr style={{ background: "#fafafa", borderBottom: "1px solid #dcdedc" }}>{["Company","Sector","Pkg (LPA)","Open Roles","Status","Joined","Actions"].map(h => <TH key={h}>{h}</TH>)}</tr></thead>
+          <tbody>
+            {filtered.map((c, i) => (
+              <tr key={c.id} style={{ borderBottom: "1px solid #f9f9fb", background: i % 2 === 0 ? "#fff" : "#fafafe" }}>
+                <td style={{ padding: "14px 16px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: "#ede9fe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#5b21b6" }}>{c.name[0]}</div>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: "#1f2a23" }}>{c.name}</span>
+                  </div>
+                </td>
+                <td style={{ padding: "14px 16px", fontSize: 13, color: "#6b7280" }}>{c.sector}</td>
+                <td style={{ padding: "14px 16px", fontSize: 14, fontWeight: 600, color: "#1f2a23" }}>₹{c.package}</td>
+                <td style={{ padding: "14px 16px", fontSize: 13, color: "#6b7280" }}>{c.openRoles}</td>
+                <td style={{ padding: "14px 16px" }}><Badge color={c.status === "Verified" ? "green" : "amber"}>{c.status}</Badge></td>
+                <td style={{ padding: "14px 16px", fontSize: 12, color: "#8a948c" }}>{c.joined}</td>
+                <td style={{ padding: "14px 16px" }}>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {c.status !== "Verified" && <button onClick={() => verify(c.id)} style={{ border: "none", background: "#dce7de", padding: "6px 8px", borderRadius: 8, cursor: "pointer" }}><Ic d={ic.shield} size={14} color="#1f5c45" /></button>}
+                    <button onClick={() => remove(c.id)} style={{ border: "none", background: "#fee2e2", padding: "6px 8px", borderRadius: 8, cursor: "pointer" }}><Ic d={ic.trash} size={14} color="#991b1b" /></button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {modal && (
+        <Overlay onClose={() => setModal(false)}>
+          <ModalHeader title="Add Company" onClose={() => setModal(false)} />
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <FInput label="Company Name *" placeholder="Google" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+              <FInput label="Sector *" placeholder="Tech" value={form.sector} onChange={e => setForm({ ...form, sector: e.target.value })} />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <FInput label="Package (LPA)" placeholder="12" type="number" value={form.package} onChange={e => setForm({ ...form, package: e.target.value })} />
+              <FInput label="Open Roles" placeholder="5" type="number" value={form.openRoles} onChange={e => setForm({ ...form, openRoles: e.target.value })} />
+            </div>
+            <FSel label="Status" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}><option>Pending</option><option>Verified</option></FSel>
+            <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+              <Btn onClick={add} style={{ flex: 1, justifyContent: "center" }}>Add Company</Btn>
+              <Btn variant="secondary" onClick={() => setModal(false)} style={{ flex: 1, justifyContent: "center" }}>Cancel</Btn>
+            </div>
+          </div>
+        </Overlay>
+      )}
+    </div>
+  );
+};
+
+// ─── STUDENTS PAGE ────────────────────────────────────────────────────────────
+
+const StudentsPage = ({ students, setStudents, showToast }) => {
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("All");
+
+  const filtered = students.filter(s => {
+    const mS = s.name.toLowerCase().includes(search.toLowerCase()) || s.branch.toLowerCase().includes(search.toLowerCase());
+    const mF = filter === "All" || s.status === filter;
+    return mS && mF;
+  });
+
+  const verify = id => { setStudents(p => p.map(s => s.id === id ? { ...s, verified: true } : s)); showToast("Student verified!", "success"); };
+  const sc = { Placed: "green", Unplaced: "red", Pending: "amber" };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h2 style={{ fontSize: 26, fontWeight: 700, color: "#1f2a23", letterSpacing: -0.5, margin: 0 }}>Students</h2>
+          <p style={{ color: "#6b7280", fontSize: 14, marginTop: 4 }}>{students.length} registered · {students.filter(s => s.status === "Placed").length} placed</p>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          {["All", "Placed", "Unplaced", "Pending"].map(f => (
+            <button key={f} onClick={() => setFilter(f)} style={{ padding: "8px 16px", borderRadius: 100, fontSize: 12, fontWeight: 600, cursor: "pointer", border: filter === f ? "none" : "1px solid #d6dad6", background: filter === f ? "#1f3d2b" : "#fff", color: filter === f ? "#fff" : "#6b7280", fontFamily: "inherit" }}>{f}</button>
+          ))}
+        </div>
+      </div>
+      <SearchBar value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name or branch..." />
+      <div style={{ background: "#fff", borderRadius: 20, border: "1px solid #dcdedc", overflow: "hidden" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead><tr style={{ background: "#fafafa", borderBottom: "1px solid #dcdedc" }}>{["Student","Branch","CGPA","Status","Company","Package","Actions"].map(h => <TH key={h}>{h}</TH>)}</tr></thead>
+          <tbody>
+            {filtered.map((s, i) => (
+              <tr key={s.id} style={{ borderBottom: "1px solid #f9f9fb", background: i % 2 === 0 ? "#fff" : "#fafafe" }}>
+                <td style={{ padding: "14px 16px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#ede9fe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#5b21b6" }}>{s.name[0]}</div>
+                    <div><div style={{ fontSize: 14, fontWeight: 600, color: "#1f2a23" }}>{s.name}</div><div style={{ fontSize: 11, color: "#8a948c" }}>ID: {s.id}</div></div>
+                  </div>
+                </td>
+                <td style={{ padding: "14px 16px" }}><Badge color="purple">{s.branch}</Badge></td>
+                <td style={{ padding: "14px 16px", fontSize: 14, fontWeight: 600, color: s.cgpa >= 9 ? "#1f5c45" : "#1f2a23" }}>{s.cgpa}</td>
+                <td style={{ padding: "14px 16px" }}><Badge color={sc[s.status]}>{s.status}</Badge></td>
+                <td style={{ padding: "14px 16px", fontSize: 13, color: "#6b7280" }}>{s.company}</td>
+                <td style={{ padding: "14px 16px", fontSize: 14, fontWeight: 600, color: "#1f2a23" }}>{s.package ? `₹${s.package} LPA` : "—"}</td>
+                <td style={{ padding: "14px 16px" }}>
+                  {!s.verified
+                    ? <button onClick={() => verify(s.id)} style={{ border: "none", background: "#dbeafe", padding: "6px 8px", borderRadius: 8, cursor: "pointer" }}><Ic d={ic.check} size={14} color="#1e40af" /></button>
+                    : <Badge color="blue">Verified</Badge>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// ─── JOB POSTINGS PAGE ───────────────────────────────────────────────────────
+
+const JobsPage = ({ jobs, setJobs, showToast }) => {
+  const [modal, setModal] = useState(false);
+  const [search, setSearch] = useState("");
+  const [form, setForm] = useState({ role: "", company: "", type: "Full-time", package: "", status: "Active" });
+
+  const filtered = jobs.filter(j => j.role.toLowerCase().includes(search.toLowerCase()) || j.company.toLowerCase().includes(search.toLowerCase()));
+
+  const add = () => {
+    if (!form.role || !form.company) return showToast("Fill required fields", "error");
+    setJobs(p => [...p, { id: Date.now(), ...form, package: +form.package || 0, applicants: 0, posted: new Date().toISOString().split("T")[0] }]);
+    setModal(false); setForm({ role: "", company: "", type: "Full-time", package: "", status: "Active" });
+    showToast("Job posting created!", "success");
+  };
+  const toggle = id => { setJobs(p => p.map(j => j.id === id ? { ...j, status: j.status === "Active" ? "Paused" : "Active" } : j)); showToast("Status updated", "info"); };
+  const remove = id => { setJobs(p => p.filter(j => j.id !== id)); showToast("Job removed", "error"); };
+  const sc = { Active: "green", Closed: "gray", Paused: "amber" };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h2 style={{ fontSize: 26, fontWeight: 700, color: "#1f2a23", letterSpacing: -0.5, margin: 0 }}>Job Postings</h2>
+          <p style={{ color: "#6b7280", fontSize: 14, marginTop: 4 }}>{jobs.length} total · {jobs.filter(j => j.status === "Active").length} active</p>
+        </div>
+        <Btn onClick={() => setModal(true)}><Ic d={ic.plus} size={16} color="#fff" /> Create Posting</Btn>
+      </div>
+      <SearchBar value={search} onChange={e => setSearch(e.target.value)} placeholder="Search job role or company..." />
+      <div style={{ background: "#fff", borderRadius: 20, border: "1px solid #dcdedc", overflow: "hidden" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead><tr style={{ background: "#fafafa", borderBottom: "1px solid #dcdedc" }}>{["Role","Company","Type","Package","Applicants","Status","Posted","Actions"].map(h => <TH key={h}>{h}</TH>)}</tr></thead>
+          <tbody>
+            {filtered.map((j, i) => (
+              <tr key={j.id} style={{ borderBottom: "1px solid #f9f9fb", background: i % 2 === 0 ? "#fff" : "#fafafe" }}>
+                <td style={{ padding: "14px 16px", fontSize: 14, fontWeight: 600, color: "#1f2a23" }}>{j.role}</td>
+                <td style={{ padding: "14px 16px", fontSize: 13, color: "#6b7280" }}>{j.company}</td>
+                <td style={{ padding: "14px 16px" }}><Badge color={j.type === "Internship" ? "blue" : "purple"}>{j.type}</Badge></td>
+                <td style={{ padding: "14px 16px", fontSize: 14, fontWeight: 600, color: "#1f2a23" }}>₹{j.package} LPA</td>
+                <td style={{ padding: "14px 16px", fontSize: 13, color: "#6b7280" }}>{j.applicants}</td>
+                <td style={{ padding: "14px 16px" }}><Badge color={sc[j.status]}>{j.status}</Badge></td>
+                <td style={{ padding: "14px 16px", fontSize: 12, color: "#8a948c" }}>{j.posted}</td>
+                <td style={{ padding: "14px 16px" }}>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => toggle(j.id)} style={{ border: "none", background: "#fef3c7", padding: "6px 8px", borderRadius: 8, cursor: "pointer" }}><Ic d={ic.pause} size={14} color="#92400e" /></button>
+                    <button onClick={() => remove(j.id)} style={{ border: "none", background: "#fee2e2", padding: "6px 8px", borderRadius: 8, cursor: "pointer" }}><Ic d={ic.trash} size={14} color="#991b1b" /></button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {modal && (
+        <Overlay onClose={() => setModal(false)}>
+          <ModalHeader title="Create Job Posting" onClose={() => setModal(false)} />
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <FInput label="Job Role *" placeholder="SDE-1" value={form.role} onChange={e => setForm({ ...form, role: e.target.value })} />
+              <FInput label="Company *" placeholder="Google" value={form.company} onChange={e => setForm({ ...form, company: e.target.value })} />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <FSel label="Type" value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}><option>Full-time</option><option>Internship</option></FSel>
+              <FInput label="Package (LPA)" placeholder="12" type="number" value={form.package} onChange={e => setForm({ ...form, package: e.target.value })} />
+            </div>
+            <FSel label="Status" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}><option>Active</option><option>Paused</option></FSel>
+            <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+              <Btn onClick={add} style={{ flex: 1, justifyContent: "center" }}>Create Posting</Btn>
+              <Btn variant="secondary" onClick={() => setModal(false)} style={{ flex: 1, justifyContent: "center" }}>Cancel</Btn>
+            </div>
+          </div>
+        </Overlay>
+      )}
+    </div>
+  );
+};
+
+// ─── PROFILE MODAL ────────────────────────────────────────────────────────────
+
+const ProfileModal = ({ onClose }) => (
+  <Overlay onClose={onClose}>
+    <ModalHeader title="Admin Profile" onClose={onClose} />
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+      <div style={{ width: 72, height: 72, borderRadius: "50%", background: "#1f3d2b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 700, color: "#fff" }}>A</div>
+      <div style={{ textAlign: "center" }}>
+        <div style={{ fontSize: 18, fontWeight: 700, color: "#1f2a23" }}>Super Admin</div>
+        <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>admin@college.edu</div>
+      </div>
+      <div style={{ width: "100%", background: "eef2ee", borderRadius: 14, padding: "1rem" }}>
+        {[["Role","Placement Administrator"],["College","IGDTUW Placement Cell"],["Access","Full Control"],["Last Login","Today, 8:04 PM"]].map(([k, v]) => (
+          <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #dcdedc", fontSize: 13 }}>
+            <span style={{ color: "#8a948c", fontWeight: 600 }}>{k}</span>
+            <span style={{ color: "#1f2a23", fontWeight: 500 }}>{v}</span>
+          </div>
+        ))}
+      </div>
+      <Btn onClick={onClose} style={{ width: "100%", justifyContent: "center" }}>Close</Btn>
+    </div>
+  </Overlay>
+);
+
+const SettingsModal = ({ onClose }) => {
+  const [toggles, setToggles] = useState([true, false, false, false]);
+  const items = ["Email notifications", "Auto-verify companies", "Dark mode", "Two-factor auth"];
+  return (
+    <Overlay onClose={onClose}>
+      <ModalHeader title="Settings" onClose={onClose} />
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        {items.map((label, i) => (
+          <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #dcdedc" }}>
+            <span style={{ fontSize: 14, fontWeight: 500, color: "#1f2a23" }}>{label}</span>
+            <div onClick={() => setToggles(t => t.map((v, j) => j === i ? !v : v))}
+              style={{ width: 40, height: 22, borderRadius: 100, background: toggles[i] ? "#1f3d2b" : "#d6dad6", cursor: "pointer", position: "relative", transition: "background 0.2s" }}>
+              <div style={{ width: 16, height: 16, borderRadius: "50%", background: "#fff", position: "absolute", top: 3, left: toggles[i] ? 21 : 3, transition: "left 0.2s" }} />
+            </div>
+          </div>
+        ))}
+        <Btn onClick={onClose} style={{ width: "100%", justifyContent: "center", marginTop: 16 }}>Save Settings</Btn>
+      </div>
+    </Overlay>
+  );
+};
+
+// ─── ROOT ─────────────────────────────────────────────────────────────────────
+
+export default function AdminDashboard() {
+  const [page, setPage] = useState("analytics");
+  const [companies, setCompanies] = useState(initialCompanies);
+  const [students, setStudents] = useState(initialStudents);
+  const [jobs, setJobs] = useState(initialJobs);
+  const [toast, setToast] = useState(null);
+  const [notifs, setNotifs] = useState(INITIAL_NOTIFS);
+  const [showNotif, setShowNotif] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+  const showToast = (msg, type = "success") => { setToast({ msg, type }); setTimeout(() => setToast(null), 2800); };
+  const placed = students.filter(s => s.status === "Placed").length;
+  const unread = notifs.filter(n => n.unread).length;
+
+  const navItems = [
+    { id: "analytics", label: "Analytics", icon: ic.analytics },
+    { id: "companies", label: "Companies", icon: ic.companies },
+    { id: "students", label: "Students", icon: ic.students },
+    { id: "jobs", label: "Job Postings", icon: ic.jobs },
+  ];
+
+  return (
+    <div style={{ display: "flex", width: "100vw", height: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", background: "#eef2ee", overflow: "hidden" }}
+      onClick={() => { setShowNotif(false); setShowMenu(false); }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+        @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #d6dad6; border-radius: 6px; }
+      `}</style>
+
+      {/* SIDEBAR */}
+      <aside style={{ width: 240, minWidth: 240, height: "100vh", background: "#fff", borderRight: "1px solid #dcdedc", display: "flex", flexDirection: "column", padding: "1.5rem 1rem", flexShrink: 0, overflowY: "auto" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: "1.5rem", padding: "0 0.25rem" }}>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: "#1f3d2b", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Ic d={ic.shield} size={18} color="#e7ece7" />
+          </div>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "#1f2a23" }}>PlaceIT</div>
+            <div style={{ fontSize: 11, color: "#8a948c" }}>Admin Panel</div>
+          </div>
+        </div>
+
+        <div style={{ fontSize: 10, fontWeight: 700, color: "#d1d5db", textTransform: "uppercase", letterSpacing: "0.1em", padding: "0 0.5rem", marginBottom: 6 }}>Menu</div>
+
+        {navItems.map(n => (
+          <button key={n.id} onClick={() => setPage(n.id)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 12, border: "none", cursor: "pointer", width: "100%", textAlign: "left", background: page === n.id ? "#1f3d2b" : "transparent", color: page === n.id ? "#fff" : "#6b7280", fontWeight: 600, fontSize: 14, marginBottom: 2, fontFamily: "inherit" }}>
+            <Ic d={n.icon} size={18} color={page === n.id ? "#fff" : "#8a948c"} />
+            {n.label}
+          </button>
+        ))}
+
+        <div style={{ marginTop: "auto" }}>
+          <div style={{ background: "#eef2ee", borderRadius: 14, padding: 14, marginBottom: 12 }}>
+            <div style={{ fontSize: 11, color: "#8a948c", marginBottom: 6 }}>Placement progress</div>
+            <div style={{ height: 6, background: "#d6dad6", borderRadius: 100, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${Math.round(placed / students.length * 100)}%`, background: "#1f3d2b", borderRadius: 100, transition: "width 0.4s" }} />
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#1f3d2b", marginTop: 6 }}>{Math.round(placed / students.length * 100)}% placed</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12, background: "#eef2ee" }}>
+            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#1f3d2b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>A</div>
+            <div><div style={{ fontSize: 13, fontWeight: 600, color: "#1f2a23" }}>Admin</div><div style={{ fontSize: 11, color: "#8a948c" }}>admin@college.edu</div></div>
+          </div>
+        </div>
+      </aside>
+
+      {/* MAIN */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, height: "100vh" }}>
+
+        {/* TOPBAR */}
+        <header style={{ height: 64, minHeight: 64, background: "#fff", borderBottom: "1px solid #dcdedc", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 2rem", flexShrink: 0 }}>
+          <div style={{ fontSize: 13, color: "#8a948c"}}>
+            Welcome back, <span style={{ color: "#1f3d2b", fontWeight: 600 }}>Admin</span> · {new Date().toLocaleDateString("en-IN", { dateStyle: "long" })}
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }} onClick={e => e.stopPropagation()}>
+
+            {/* BELL */}
+            <div style={{ position: "relative" }}>
+              <button onClick={() => { setShowNotif(v => !v); setShowMenu(false); }}
+                style={{ border: "1px solid #d6dad6", background: "#fff", borderRadius: 12, padding: "8px 10px", cursor: "pointer", display: "flex", alignItems: "center", position: "relative" }}>
+                <Ic d={ic.bell} size={18} color="#6b7280" />
+                {unread > 0 && (
+                  <span style={{ position: "absolute", top: 5, right: 5, width: 16, height: 16, background: "#ef4444", borderRadius: "50%", border: "2px solid #fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#fff", fontWeight: 700 }}>
+                    {unread}
+                  </span>
+                )}
+              </button>
+              {showNotif && (
+                <div style={{ position: "absolute", top: 50, right: 0, width: 300, background: "#fff", border: "1px solid #d6dad6", borderRadius: 16, boxShadow: "0 12px 40px rgba(0,0,0,0.12)", zIndex: 500, overflow: "hidden", animation: "fadeUp 0.2s" }}>
+                  <div style={{ padding: "12px 16px", borderBottom: "1px solid #dcdedc", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "#1f2a23" }}>Notifications</span>
+                    <button onClick={() => setNotifs(p => p.map(n => ({ ...n, unread: false })))} style={{ fontSize: 11, color: "#1f3d2b", fontWeight: 600, border: "none", background: "none", cursor: "pointer", fontFamily: "inherit" }}>Mark all read</button>
+                  </div>
+                  {notifs.map(n => (
+                    <div key={n.id} onClick={() => setNotifs(p => p.map(x => x.id === n.id ? { ...x, unread: false } : x))}
+                      style={{ display: "flex", gap: 12, padding: "12px 16px", borderBottom: "1px solid #f9f9fb", background: n.unread ? "#fafafe" : "#fff", cursor: "pointer", alignItems: "flex-start" }}>
+                      <span style={{ fontSize: 18 }}>{n.icon}</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, color: "#1f2a23", fontWeight: n.unread ? 600 : 400 }}>{n.text}</div>
+                        <div style={{ fontSize: 11, color: "#8a948c", marginTop: 2 }}>{n.time}</div>
+                      </div>
+                      {n.unread && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#1f3d2b", marginTop: 4, flexShrink: 0 }} />}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* AVATAR */}
+            <div style={{ position: "relative" }}>
+              <div onClick={() => { setShowMenu(v => !v); setShowNotif(false); }}
+                style={{ width: 38, height: 38, borderRadius: "50%", background: "#1f3d2b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: "#fff", cursor: "pointer", userSelect: "none" }}>
+                A
+              </div>
+              {showMenu && (
+                <div style={{ position: "absolute", top: 50, right: 0, width: 185, background: "#fff", border: "1px solid #d6dad6", borderRadius: 14, boxShadow: "0 12px 40px rgba(0,0,0,0.12)", zIndex: 500, overflow: "hidden", animation: "fadeUp 0.2s" }}>
+                  <div style={{ padding: "12px 14px", borderBottom: "1px solid #dcdedc" }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#1f2a23" }}>Super Admin</div>
+                    <div style={{ fontSize: 11, color: "#8a948c" }}>admin@college.edu</div>
+                  </div>
+                  {[
+                    { label: "View Profile", icon: ic.user, fn: () => { setShowProfile(true); setShowMenu(false); } },
+                    { label: "Settings", icon: ic.settings, fn: () => { setShowSettings(true); setShowMenu(false); } },
+                  ].map(item => (
+                    <button key={item.label} onClick={item.fn}
+                      style={{ width: "100%", padding: "10px 14px", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "#374151", fontWeight: 500, fontFamily: "inherit", textAlign: "left" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#eef2ee"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                      <Ic d={item.icon} size={15} color="#8a948c" /> {item.label}
+                    </button>
+                  ))}
+                  <div style={{ borderTop: "1px solid #dcdedc" }}>
+                    <button onClick={() => window.confirm("Logout?") && showToast("Logged out!", "error")}
+                      style={{ width: "100%", padding: "10px 14px", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "#991b1b", fontWeight: 600, fontFamily: "inherit", textAlign: "left" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#fee2e2"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                      <Ic d={ic.logout} size={15} color="#991b1b" /> Logout
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* PAGE */}
+        <main style={{ flex: 1, overflowY: "auto", padding: "2rem 2.5rem" }}>
+          {page === "analytics" && <AnalyticsPage students={students} companies={companies} />}
+          {page === "companies" && <CompaniesPage companies={companies} setCompanies={setCompanies} showToast={showToast} />}
+          {page === "students" && <StudentsPage students={students} setStudents={setStudents} showToast={showToast} />}
+          {page === "jobs" && <JobsPage jobs={jobs} setJobs={setJobs} showToast={showToast} />}
+        </main>
+      </div>
+
+      {/* MODALS */}
+      {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+
+      {/* TOAST */}
+      {toast && (
+        <div style={{ position: "fixed", bottom: 28, right: 28, background: toast.type === "success" ? "#1f5c45" : toast.type === "error" ? "#991b1b" : "#1e40af", color: "#fff", padding: "12px 20px", borderRadius: 14, fontSize: 13, fontWeight: 500, zIndex: 9999, boxShadow: "0 8px 24px rgba(0,0,0,0.2)", animation: "fadeUp 0.3s" }}>
+          {toast.msg}
+        </div>
+      )}
+    </div>
+  );
+}
