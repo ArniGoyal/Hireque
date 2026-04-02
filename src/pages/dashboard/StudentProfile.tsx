@@ -7,8 +7,8 @@ import { Edit, Code, GraduationCap, MapPin, Linkedin, Github } from "lucide-reac
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
-import { uploadResume } from "@/firebase/resumes";
-import { updateStudentProfile } from "@/firebase/users";
+import { uploadResume } from "@/supabase/resumes";
+import { updateStudentProfile } from "@/supabase/users";
 
 const StudentProfile = () => {
   const { loading, profile, user } = useAuth();
@@ -22,9 +22,34 @@ const StudentProfile = () => {
   const resumeStoragePath = student?.resume?.storagePath;
 
   const aiScore = useMemo(() => {
-    if (typeof cgpa !== "number" || Number.isNaN(cgpa)) return 88;
-    return Math.min(100, Math.max(0, Math.round((cgpa / 10) * 100)));
-  }, [cgpa]);
+  let score = 0;
+
+  // ✅ 1. CGPA (40%)
+  if (typeof cgpa === "number") {
+    score += (cgpa / 10) * 40;
+  }
+
+  // ✅ 2. Skills (30%)
+  const skillCount = skills.length;
+  const skillScore = Math.min(skillCount / 8, 1); // ideal = 8 skills
+  score += skillScore * 30;
+
+  // ✅ 3. Resume (15%)
+  if (resumeUrl) {
+    score += 15;
+  }
+
+  // ✅ 4. Profile completeness (15%)
+  let completeness = 0;
+  if (name) completeness += 0.25;
+  if (branch) completeness += 0.25;
+  if (cgpa) completeness += 0.25;
+  if (skills.length > 0) completeness += 0.25;
+
+  score += completeness * 15;
+
+  return Math.round(score);
+}, [cgpa, skills, resumeUrl, name, branch]);
 
   const initials = useMemo(() => {
     const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -40,49 +65,89 @@ const StudentProfile = () => {
   const [cgpaDraft, setCgpaDraft] = useState("");
   const [branchDraft, setBranchDraft] = useState("");
   const [skillsDraft, setSkillsDraft] = useState("");
+  const [collegeDraft, setCollegeDraft] = useState("");
+const [yearDraft, setYearDraft] = useState("");
+const [linkedinDraft, setLinkedinDraft] = useState("");
+const [githubDraft, setGithubDraft] = useState("");
+const [collegeOptions, setCollegeOptions] = useState<string[]>([]);
+const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     if (!student) return;
     setCgpaDraft(typeof student.cgpa === "number" ? student.cgpa.toString() : "");
     setBranchDraft(student.branch ?? "");
     setSkillsDraft((student.skills ?? []).join(", "));
+    setCollegeDraft(student.college ?? "");
+setYearDraft(student.year ?? "");
+setLinkedinDraft(student.linkedin ?? "");
+setGithubDraft(student.github ?? "");
   }, [student]);
+
+  useEffect(() => {
+  const fetchColleges = async () => {
+    try {
+      const res = await fetch("http://universities.hipolabs.com/search?country=India");
+      const data = await res.json();
+      setCollegeOptions(data.slice(0, 50).map((c: any) => c.name));
+    } catch {
+      console.log("College API failed");
+    }
+  };
+  fetchColleges();
+}, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) setFile(e.target.files[0]);
   };
-
+  const isValidUrl = (url: string) => {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+};
   const handleUpload = async () => {
-    if (!user) {
-      toast.error("You must be signed in.");
-      return;
-    }
-    if (!file) {
-      toast.error("Please select a resume file first.");
-      return;
-    }
+  if (!user) {
+    toast.error("You must be signed in.");
+    return;
+  }
+  if (!file) {
+    toast.error("Please select a resume file first.");
+    return;
+  }
 
-    try {
-      setIsUploading(true);
-      toast("Uploading Resume...", { description: "Storing in Firebase Storage..." });
-      const { downloadUrl, storagePath } = await uploadResume({ uid: user.uid, file });
+  let toastId;
 
-      await updateStudentProfile(user.uid, {
-        resume: { storagePath, downloadUrl, updatedAt: Timestamp.now() },
-      });
+  try {
+    setIsUploading(true);
 
-      toast.success("Resume uploaded successfully!", { description: "Your profile is updated." });
-      setFile(null);
-    } catch (err) {
-      toast({
-        title: "Resume upload failed",
-        description: err instanceof Error ? err.message : "Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  };
+    toastId = toast.loading("Uploading Resume...");
+
+    const { downloadUrl, storagePath } = await uploadResume({ uid: user.uid, file });
+
+    await updateStudentProfile(user.uid, {
+      resume: { storagePath, downloadUrl, updatedAt: Timestamp.now() },
+    });
+
+    toast.success("Resume uploaded successfully!", { id: toastId });
+
+    setFile(null);
+  } catch (err) {
+    toast.error(
+      err instanceof Error ? err.message : "Resume upload failed",
+      { id: toastId }
+    );
+  } finally {
+    setIsUploading(false);
+  }
+};
+if (linkedinDraft && !isValidUrl(linkedinDraft)) {
+  return toast.error("Invalid LinkedIn URL");
+}
+if (githubDraft && !isValidUrl(githubDraft)) {
+  return toast.error("Invalid GitHub URL");
+}
 
   const handleSaveProfile = async () => {
     if (!user) return;
@@ -97,12 +162,27 @@ const StudentProfile = () => {
       .slice(0, 30);
 
     await updateStudentProfile(user.uid, {
-      cgpa: cgpaClean,
-      branch: branchDraft.trim().length ? branchDraft.trim() : undefined,
-      skills: skillsArr,
-      name: name,
-      // keep resume unchanged (merge true)
-    });
+  cgpa: cgpaClean,
+  branch: branchDraft.trim().length ? branchDraft.trim() : undefined,
+  skills: skillsArr,
+  college: collegeDraft.trim() ? collegeDraft.trim() : null,
+year: yearDraft ? yearDraft : null,
+  linkedin: linkedinDraft.trim() ? linkedinDraft.trim() : null,
+github: githubDraft.trim() ? githubDraft.trim() : null,
+  name: name,
+});
+
+profile.student = {
+  ...profile.student,
+  cgpa: cgpaClean,
+  branch: branchDraft,
+  skills: skillsArr,
+  college: collegeDraft,
+  year: yearDraft,
+  linkedin: linkedinDraft,
+  github: githubDraft,
+};
+setIsEditing(false);
 
     toast.success("Profile saved!", { description: "Your eligibility matching will update." });
   };
@@ -126,7 +206,9 @@ const StudentProfile = () => {
             </p>
           </div>
           <Button
-            onClick={() => alert("Profile editing is now enabled for key fields.")}
+            onClick={() => { setIsEditing(true);
+              alert("You can now edit your profile fields.");
+            }}
             className="rounded-full shadow-lg shadow-primary/20 bg-primary text-white font-bold h-10 px-6 hidden sm:flex"
           >
             <Edit className="w-4 h-4 mr-2" />
@@ -152,14 +234,16 @@ const StudentProfile = () => {
                 {branch ? branch : "Student"}
               </p>
 
-              <div className="flex items-center gap-2 mt-4 text-xs font-bold text-muted-foreground relative z-10">
-                <MapPin className="w-3 h-3" /> {/* placeholder location */}
-                Campus
-              </div>
+              <div className="flex items-center gap-2 mt-4 text-xs font-bold text-muted-foreground relative z-10 text-center px-4">
+  <MapPin className="w-3 h-3 flex-shrink-0" />
+  <span className="truncate">
+    {student?.college || "Add your college"}
+  </span>
+</div>
 
               <div className="flex gap-3 mt-6 relative z-10">
                 <Button
-                  onClick={() => window.open("https://linkedin.com", "_blank")}
+                  onClick={() => window.open(student?.linkedin || "https://linkedin.com", "_blank")}
                   variant="outline"
                   size="icon"
                   className="rounded-full border-primary/10 text-primary hover:bg-secondary"
@@ -167,7 +251,7 @@ const StudentProfile = () => {
                   <Linkedin className="w-4 h-4" />
                 </Button>
                 <Button
-                  onClick={() => window.open("https://github.com", "_blank")}
+                  onClick={() => window.open(student?.github || "https://github.com", "_blank")}
                   variant="outline"
                   size="icon"
                   className="rounded-full border-primary/10 text-primary hover:bg-secondary"
@@ -189,9 +273,12 @@ const StudentProfile = () => {
               <Badge className="bg-primary text-white text-[10px] px-3 py-0.5 rounded-full font-bold mb-3">
                 CURRENT AI SCORE
               </Badge>
-              <p className="text-xs text-muted-foreground font-medium px-4">
-                Your profile is consistently matching with top-tier roles.
-              </p>
+                <p className="text-xs text-muted-foreground font-medium px-4">
+  {aiScore >= 85 && "Excellent profile! You're ready for top companies 🚀"}
+  {aiScore >= 70 && aiScore < 85 && "Good profile. Add more skills to improve 💡"}
+  {aiScore < 70 && "Complete your profile to increase job matches ⚡"}
+</p>
+              
 
               <div className="flex flex-col gap-3 w-full mt-4">
                 {resumeUrl ? (
@@ -245,7 +332,7 @@ const StudentProfile = () => {
                     <h4 className="font-bold text-primary text-sm uppercase tracking-wide">
                       B.Tech in {branch || "Computer Science"}
                     </h4>
-                    <p className="text-sm font-medium text-muted-foreground mt-1">Your Institute</p>
+                    <p className="text-sm font-medium text-muted-foreground mt-1">{student?.college || "Add your college"}</p>
                   </div>
                   <div className="text-right">
                     <span className="block font-serif font-black text-lg text-primary">
@@ -253,7 +340,7 @@ const StudentProfile = () => {
                       <span className="text-xs font-sans text-muted-foreground">CGPA</span>
                     </span>
                     <span className="text-xs font-bold text-muted-foreground tracking-widest">
-                      {cgpa ? "Updated" : "Add your CGPA"}
+                      {typeof cgpa === "number" ? "Updated" : "Add your CGPA"}
                     </span>
                   </div>
                 </div>
@@ -268,6 +355,21 @@ const StudentProfile = () => {
               </div>
 
               <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2 sm:col-span-2">
+  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">College</p>
+  <input
+    list="college-options"
+    value={collegeDraft}
+    onChange={(e) => setCollegeDraft(e.target.value)}
+    placeholder="e.g. IIT Delhi"
+    className="h-11 px-4 rounded-xl border border-primary/10 bg-background w-full"
+  />
+  <datalist id="college-options">
+    {collegeOptions.map((c, i) => (
+      <option key={i} value={c} />
+    ))}
+  </datalist>
+</div>
                 <div className="space-y-2">
                   <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">CGPA</p>
                   <input
@@ -277,6 +379,7 @@ const StudentProfile = () => {
                     max={10}
                     value={cgpaDraft}
                     onChange={(e) => setCgpaDraft(e.target.value)}
+                    disabled={!isEditing}
                     placeholder="e.g. 8.9"
                     className="h-11 px-4 rounded-xl border border-primary/10 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
@@ -287,10 +390,48 @@ const StudentProfile = () => {
                     type="text"
                     value={branchDraft}
                     onChange={(e) => setBranchDraft(e.target.value)}
+                    disabled={!isEditing}
                     placeholder="e.g. CSE"
                     className="h-11 px-4 rounded-xl border border-primary/10 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
+                <div className="space-y-2">
+  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Year</p>
+  <select
+    value={yearDraft}
+    onChange={(e) => setYearDraft(e.target.value)}
+    disabled={!isEditing}
+    className="h-11 px-4 rounded-xl border border-primary/10 bg-background w-full"
+  >
+    <option value="">Select Year</option>
+    <option value="1st">1st Year</option>
+    <option value="2nd">2nd Year</option>
+    <option value="3rd">3rd Year</option>
+    <option value="4th">4th Year</option>
+  </select>
+</div>
+<div className="space-y-2">
+  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">LinkedIn</p>
+  <input
+    type="text"
+    value={linkedinDraft}
+    onChange={(e) => setLinkedinDraft(e.target.value)}
+    disabled={!isEditing}
+    placeholder="https://linkedin.com/in/..."
+    className="h-11 px-4 rounded-xl border border-primary/10 bg-background w-full"
+  />
+</div>
+<div className="space-y-2">
+  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">GitHub</p>
+  <input
+    type="text"
+    value={githubDraft}
+    onChange={(e) => setGithubDraft(e.target.value)}
+    disabled={!isEditing}
+    placeholder="https://github.com/..."
+    className="h-11 px-4 rounded-xl border border-primary/10 bg-background w-full"
+  />
+</div>
               </div>
             </motion.div>
 
@@ -326,18 +467,21 @@ const StudentProfile = () => {
                   type="text"
                   value={skillsDraft}
                   onChange={(e) => setSkillsDraft(e.target.value)}
+                  disabled={!isEditing}
                   placeholder="e.g. React, Node.js, SQL"
                   className="h-11 px-4 rounded-xl border border-primary/10 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
 
               <div className="mt-5">
+                {isEditing && (
                 <Button
                   onClick={handleSaveProfile}
                   className="w-full rounded-full font-bold bg-primary text-white hover:bg-primary/90"
                 >
                   Save Profile
                 </Button>
+                )}
               </div>
             </motion.div>
           </div>
