@@ -142,50 +142,52 @@ setGithubDraft(student.github ?? "");
     setIsUploading(false);
   }
 };
-if (linkedinDraft && !isValidUrl(linkedinDraft)) {
-  return toast.error("Invalid LinkedIn URL");
-}
-if (githubDraft && !isValidUrl(githubDraft)) {
-  return toast.error("Invalid GitHub URL");
-}
+
 
   const handleSaveProfile = async () => {
-    if (!user) return;
-    const cgpaVal =
-      cgpaDraft.trim().length === 0 ? undefined : Number(cgpaDraft.trim().replace(",", "."));
-    const cgpaClean = typeof cgpaVal === "number" && !Number.isNaN(cgpaVal) ? cgpaVal : undefined;
+  if (!user) return;
 
-    const skillsArr = skillsDraft
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .slice(0, 30);
+  if (linkedinDraft && !isValidUrl(linkedinDraft)) {
+    toast.error("Invalid LinkedIn URL");
+    return;
+  }
 
-    await updateStudentProfile(user.uid, {
-  cgpa: cgpaClean,
-  branch: branchDraft.trim().length ? branchDraft.trim() : undefined,
-  skills: skillsArr,
-  college: collegeDraft.trim() ? collegeDraft.trim() : null,
-year: yearDraft ? yearDraft : null,
-  linkedin: linkedinDraft.trim() ? linkedinDraft.trim() : null,
-github: githubDraft.trim() ? githubDraft.trim() : null,
-  name: name,
-});
+  if (githubDraft && !isValidUrl(githubDraft)) {
+    toast.error("Invalid GitHub URL");
+    return;
+  }
 
-profile.student = {
-  ...profile.student,
-  cgpa: cgpaClean,
-  branch: branchDraft,
-  skills: skillsArr,
-  college: collegeDraft,
-  year: yearDraft,
-  linkedin: linkedinDraft,
-  github: githubDraft,
+  const cgpaVal =
+    cgpaDraft.trim().length === 0
+      ? undefined
+      : Number(cgpaDraft.trim().replace(",", "."));
+
+  const cgpaClean =
+    typeof cgpaVal === "number" && !Number.isNaN(cgpaVal)
+      ? cgpaVal
+      : undefined;
+
+  const skillsArr = skillsDraft
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 30);
+
+  await updateStudentProfile(user.uid, {
+    cgpa: cgpaClean,
+    branch: branchDraft.trim() || undefined,
+    skills: skillsArr,
+    college: collegeDraft.trim() || undefined,
+    year: yearDraft || undefined,
+    linkedin: linkedinDraft.trim() || undefined,
+    github: githubDraft.trim() || undefined,
+    name: name,
+  });
+
+  setIsEditing(false);
+
+  toast.success("Profile saved!");
 };
-setIsEditing(false);
-
-    toast.success("Profile saved!", { description: "Your eligibility matching will update." });
-  };
 
   if (loading || !profile || !user || !student) {
     return (
@@ -359,6 +361,7 @@ setIsEditing(false);
   <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">College</p>
   <input
     list="college-options"
+    disabled={!isEditing}
     value={collegeDraft}
     onChange={(e) => setCollegeDraft(e.target.value)}
     placeholder="e.g. IIT Delhi"

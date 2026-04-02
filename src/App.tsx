@@ -15,7 +15,7 @@ import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "@/auth/AuthProvider";
 import { RequireRole } from "@/auth/RequireRole";
-
+import StudentAIInsights from "./pages/dashboard/StudentAIInsights";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -28,7 +28,10 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-
+            <Route
+  path="/dashboard/student/ai-insights"
+  element={<StudentAIInsights />}
+/>
             {/* Student Routes */}
             <Route
               path="/dashboard/student"
