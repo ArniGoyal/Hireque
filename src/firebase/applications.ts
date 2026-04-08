@@ -2,6 +2,7 @@ import {
   collection,
   doc,
   getDocs,
+  increment,
   query,
   serverTimestamp,
   setDoc,
@@ -61,7 +62,14 @@ export async function applyToJob(args: {
     updatedAt: serverTimestamp(),
   };
 
+  // Update the application record
   await setDoc(doc(db, "applications", applicationId), payload, { merge: false });
+
+  // Increment the counter on the job document
+  await updateDoc(doc(db, "jobs", args.jobId), {
+    applicationsCount: increment(1),
+  });
+
   return applicationId;
 }
 

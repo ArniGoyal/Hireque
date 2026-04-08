@@ -47,12 +47,24 @@ export async function createUserProfile(args: {
   await setDoc(userDocRef(uid), payload, { merge: true });
 }
 
-export async function updateStudentProfile(uid: string, patch: StudentProfile): Promise<void> {
-  await setDoc(userDocRef(uid), { student: patch }, { merge: true });
+export async function updateStudentProfile(uid: string, patch: StudentProfile & { name?: string }): Promise<void> {
+  const { name, ...studentData } = patch;
+  const updates: any = {};
+  if (Object.keys(studentData).length > 0) {
+    updates.student = studentData;
+  }
+  if (name) {
+    updates.name = name;
+  }
+  await setDoc(userDocRef(uid), updates, { merge: true });
 }
 
-export async function verifyStudent(uid: string): Promise<void> {
-  await setDoc(userDocRef(uid), { student: { verified: true } }, { merge: true });
+export async function verifyUser(uid: string, role: AppRole): Promise<void> {
+  if (role === "student") {
+    await setDoc(userDocRef(uid), { student: { verified: true } }, { merge: true });
+  } else if (role === "recruiter") {
+    await setDoc(userDocRef(uid), { recruiter: { verified: true } }, { merge: true });
+  }
 }
 
 export async function listPendingStudents(): Promise<Array<{ uid: string; name?: string }>> {
@@ -63,5 +75,17 @@ export async function listPendingStudents(): Promise<Array<{ uid: string; name?:
   );
   const snaps = await getDocs(q);
   return snaps.docs.map((d) => ({ uid: d.id, name: (d.data() as UserProfileDoc).name }));
+}
+
+export async function listAllStudents(): Promise<UserProfileDoc[]> {
+  const q = query(collection(db, "users"), where("role", "==", "student"));
+  const snaps = await getDocs(q);
+  return snaps.docs.map((d) => d.data() as UserProfileDoc);
+}
+
+export async function listAllRecruiters(): Promise<UserProfileDoc[]> {
+  const q = query(collection(db, "users"), where("role", "==", "recruiter"));
+  const snaps = await getDocs(q);
+  return snaps.docs.map((d) => d.data() as UserProfileDoc);
 }
 

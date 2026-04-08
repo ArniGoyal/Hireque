@@ -62,6 +62,9 @@ const Signup = () => {
     
     setIsLoading(true);
     try {
+      if (role === "recruiter" && !email.endsWith("@company.com")) {
+        throw new Error("Recruiters must use a @company.com email address.");
+      }
       await signUp({ email, password, role, name });
       toast({ title: "Account created!", description: `Welcome to Hireque as ${role}.` });
       // Set pending role and let useEffect handle navigation once profile loads
@@ -89,7 +92,12 @@ const Signup = () => {
 
     setIsLoading(true);
     try {
-      await signInWithGoogle({ role });
+      const { email: googleEmail } = await signInWithGoogle({ role });
+      if (role === "recruiter" && !googleEmail.endsWith("@company.com")) {
+        // Optionally sign out or delete the user if they signed up with @gmail.com but selected recruiter?
+        // For now, let's just toast an error.
+        throw new Error("Recruiters must use a @company.com email address.");
+      }
       toast({ title: "Account created!", description: `Welcome to Hireque as ${role}.` });
       // Set pending role and let useEffect handle navigation once profile loads
       setPendingRole(role);
@@ -107,7 +115,6 @@ const Signup = () => {
   const roles = [
     { key: "student" as const, label: "Student", icon: <Users className="w-4 h-4" /> },
     { key: "recruiter" as const, label: "Recruiter", icon: <Rocket className="w-4 h-4" /> },
-    { key: "admin" as const, label: "Admin", icon: <Award className="w-4 h-4" /> },
   ];
 
   return (

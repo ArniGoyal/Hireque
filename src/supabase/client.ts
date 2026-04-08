@@ -4,7 +4,7 @@ function requiredEnv(name: string) {
   const value = import.meta.env[name];
   if (!value) {
     throw new Error(
-      `Missing required environment variable: ${name}. Add it to your .env file (see .env.example).`,
+      `Missing required environment variable: ${name}. Add it to your .env file.`,
     );
   }
   return value as string;
@@ -17,4 +17,3 @@ export const supabase = createClient(
 
 export const RESUME_BUCKET =
   (import.meta.env.VITE_SUPABASE_RESUME_BUCKET as string | undefined) ?? "resumes";
-

@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { uploadResume } from "@/supabase/resumes";
-import { updateStudentProfile } from "@/supabase/users";
+import { updateStudentProfile } from "@/firebase/users";
 
 const StudentProfile = () => {
   const { loading, profile, user } = useAuth();
@@ -71,17 +71,20 @@ const [linkedinDraft, setLinkedinDraft] = useState("");
 const [githubDraft, setGithubDraft] = useState("");
 const [collegeOptions, setCollegeOptions] = useState<string[]>([]);
 const [isEditing, setIsEditing] = useState(false);
+const [nameDraft, setNameDraft] = useState("");
 
   useEffect(() => {
+    if (!profile || isEditing) return;
+    setNameDraft(profile.name ?? "");
     if (!student) return;
     setCgpaDraft(typeof student.cgpa === "number" ? student.cgpa.toString() : "");
     setBranchDraft(student.branch ?? "");
     setSkillsDraft((student.skills ?? []).join(", "));
     setCollegeDraft(student.college ?? "");
-setYearDraft(student.year ?? "");
-setLinkedinDraft(student.linkedin ?? "");
-setGithubDraft(student.github ?? "");
-  }, [student]);
+    setYearDraft(student.year ?? "");
+    setLinkedinDraft(student.linkedin ?? "");
+    setGithubDraft(student.github ?? "");
+  }, [profile, student, isEditing]);
 
   useEffect(() => {
   const fetchColleges = async () => {
@@ -181,7 +184,7 @@ setGithubDraft(student.github ?? "");
     year: yearDraft || undefined,
     linkedin: linkedinDraft.trim() || undefined,
     github: githubDraft.trim() || undefined,
-    name: name,
+    name: nameDraft.trim() || undefined,
   });
 
   setIsEditing(false);
@@ -207,15 +210,23 @@ setGithubDraft(student.github ?? "");
               Manage your personal information, skills, and your resume.
             </p>
           </div>
-          <Button
-            onClick={() => { setIsEditing(true);
-              alert("You can now edit your profile fields.");
-            }}
-            className="rounded-full shadow-lg shadow-primary/20 bg-primary text-white font-bold h-10 px-6 hidden sm:flex"
-          >
-            <Edit className="w-4 h-4 mr-2" />
-            Edit Profile
-          </Button>
+          {isEditing ? (
+            <Button
+              onClick={() => setIsEditing(false)}
+              variant="outline"
+              className="rounded-full shadow-sm border-primary/20 text-primary font-bold h-10 px-6"
+            >
+              Cancel
+            </Button>
+          ) : (
+            <Button
+              onClick={() => setIsEditing(true)}
+              className="rounded-full shadow-lg shadow-primary/20 bg-primary text-white font-bold h-10 px-6 flex"
+            >
+              <Edit className="w-4 h-4 mr-2" />
+              Edit Profile
+            </Button>
+          )}
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
@@ -231,7 +242,18 @@ setGithubDraft(student.github ?? "");
               <div className="w-24 h-24 rounded-full bg-secondary flex items-center justify-center font-bold text-primary font-serif text-3xl mb-4 border-4 border-white shadow-md relative z-10">
                 {initials}
               </div>
-              <h2 className="text-2xl font-bold font-serif text-primary relative z-10">{name}</h2>
+              <h2 className="text-2xl font-bold font-serif text-primary relative z-10">
+                {isEditing ? (
+                  <input
+                    title="Edit Name"
+                    value={nameDraft}
+                    onChange={(e) => setNameDraft(e.target.value)}
+                    className="bg-transparent border-b border-primary/20 focus:outline-none w-full text-center"
+                  />
+                ) : (
+                  name || "Student"
+                )}
+              </h2>
               <p className="text-sm font-semibold text-muted-foreground uppercase tracking-widest mt-1 relative z-10">
                 {branch ? branch : "Student"}
               </p>

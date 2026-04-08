@@ -86,11 +86,7 @@ const RecruiterDashboard = () => {
         setJobs(companyJobs);
         setApplicants(companyApps);
       } catch (err) {
-        toast({
-          title: "Failed to load recruiter data",
-          description: err instanceof Error ? err.message : "Please try again.",
-          variant: "destructive",
-        });
+        toast.error(err instanceof Error ? err.message : "Failed to load data");
       }
     };
 
@@ -131,14 +127,15 @@ const RecruiterDashboard = () => {
 
     try {
       setIsPosting(true);
-      const minCgpa = Number(newJob.cgpa);
+      const minCgpaVal = Number(newJob.cgpa);
+      const minCgpa = Number.isFinite(minCgpaVal) ? minCgpaVal : 0;
       const requiredSkills = newJob.skills
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
 
       const branch =
-        newJob.branch.trim().length && newJob.branch !== "All Branches" ? newJob.branch.trim() : undefined;
+        newJob.branch.trim().length && newJob.branch !== "All Branches" ? newJob.branch.trim() : null;
 
       await createJobPosting({
         companyUid: user.uid,
@@ -148,9 +145,9 @@ const RecruiterDashboard = () => {
         location: newJob.location,
         package: newJob.package,
         eligibility: {
-          minCgpa: Number.isFinite(minCgpa) ? minCgpa : undefined,
+          minCgpa,
           branch,
-          requiredSkills: requiredSkills.length ? requiredSkills : undefined,
+          requiredSkills,
         },
       });
 
@@ -169,11 +166,7 @@ const RecruiterDashboard = () => {
       const nextJobs = await listCompanyJobs(user.uid);
       setJobs(nextJobs);
     } catch (err) {
-      toast({
-        title: "Job creation failed",
-        description: err instanceof Error ? err.message : "Please try again.",
-        variant: "destructive",
-      });
+      toast.error(err instanceof Error ? err.message : "Job creation failed");
     } finally {
       setIsPosting(false);
     }

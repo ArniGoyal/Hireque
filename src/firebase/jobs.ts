@@ -77,3 +77,8 @@ export async function listCompanyJobs(companyUid: string): Promise<JobDoc[]> {
   return snaps.docs.map((d) => parseJobSnap(d.data(), d.id));
 }
 
+export async function listAllJobs(): Promise<JobDoc[]> {
+  const q = query(collection(db, "jobs"));
+  const snaps = await getDocs(q);
+  return snaps.docs.map((d) => parseJobSnap(d.data(), d.id));
+}

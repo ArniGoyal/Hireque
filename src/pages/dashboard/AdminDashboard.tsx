@@ -1,8 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from "recharts";
+import {
+  collection,
+  doc,
+  getDocs,
+  increment,
+  query,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+  where,
+  type DocumentData,
+} from "firebase/firestore";
+import { listAllStudents, listAllRecruiters, verifyUser } from "@/firebase/users";
+import { listAllJobs, createJobPosting } from "@/firebase/jobs";
+import type { UserProfileDoc } from "@/types/user";
+import type { JobDoc } from "@/firebase/jobs";
 
 // ─── DATA ────────────────────────────────────────────────────────────────────
 
@@ -182,10 +198,11 @@ const TH = ({ children }) => (
 
 // ─── ANALYTICS PAGE ──────────────────────────────────────────────────────────
 
-const AnalyticsPage = ({ students, companies }) => {
-  const placed = students.filter(s => s.status === "Placed");
-  const pct = Math.round((placed.length / students.length) * 100);
-  const highest = Math.max(...placed.map(s => s.package));
+const AnalyticsPage = ({ students, companies }: { students: UserProfileDoc[], companies: UserProfileDoc[] }) => {
+  const verifiedStudents = students.filter(s => s.student?.verified === true);
+  const pct = students.length > 0 ? Math.round((verifiedStudents.length / students.length) * 100) : 0;
+  // Highest package logic needs jobs/applications, for now use a dummy or skip
+  const highest = 0; 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
       <div>
@@ -193,9 +210,9 @@ const AnalyticsPage = ({ students, companies }) => {
         <p style={{ color: "#6b7280", fontSize: 14, marginTop: 4 }}>Placement season at a glance — batch 2024</p>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
-        <StatCard label="Students Placed" value={placed.length} sub={`${pct}% of batch`} icon={ic.users} accent="#1f3d2b" />
-        <StatCard label="Companies Visiting" value={companies.length} sub={`${companies.filter(c => c.status === "Verified").length} verified`} icon={ic.companies} accent="#06b6d4" />
-        <StatCard label="Highest Package" value={`${highest} LPA`} sub="Google · CSE" icon={ic.box} accent="#f59e0b" />
+        <StatCard label="Students Verified" value={verifiedStudents.length} sub={`${pct}% of batch`} icon={ic.users} accent="#1f3d2b" />
+        <StatCard label="Companies Visiting" value={companies.length} sub={`${companies.filter(c => c.recruiter?.verified).length} verified`} icon={ic.companies} accent="#06b6d4" />
+        <StatCard label="Highest Package" value={`${highest} LPA`} sub="—" icon={ic.box} accent="#f59e0b" />
         <StatCard label="Placement %" value={`${pct}%`} sub="↑ 12% vs last year" icon={ic.trending} accent="#2e7d5b" />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 20 }}>
@@ -257,7 +274,15 @@ const CompaniesPage = ({ companies, setCompanies, showToast }) => {
     showToast("Company added!", "success");
   };
   const remove = id => { setCompanies(p => p.filter(c => c.id !== id)); showToast("Company removed", "error"); };
-  const verify = id => { setCompanies(p => p.map(c => c.id === id ? { ...c, status: "Verified" } : c)); showToast("Company verified!", "success"); };
+  const verify = async (id) => {
+    try {
+      await verifyUser(id, "recruiter");
+      setCompanies(p => p.map(c => c.uid === id ? { ...c, recruiter: { ...c.recruiter, verified: true } } : c));
+      showToast("Company verified!", "success");
+    } catch (err) {
+      showToast("Verification failed", "error");
+    }
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -277,18 +302,18 @@ const CompaniesPage = ({ companies, setCompanies, showToast }) => {
               <tr key={c.id} style={{ borderBottom: "1px solid #f9f9fb", background: i % 2 === 0 ? "#fff" : "#fafafe" }}>
                 <td style={{ padding: "14px 16px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 10, background: "#ede9fe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#5b21b6" }}>{c.name[0]}</div>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: "#1f2a23" }}>{c.name}</span>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: "#ede9fe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#5b21b6" }}>{c.name?.[0] || "?"}</div>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: "#1f2a23" }}>{c.recruiter?.companyName || c.name}</span>
                   </div>
                 </td>
-                <td style={{ padding: "14px 16px", fontSize: 13, color: "#6b7280" }}>{c.sector}</td>
-                <td style={{ padding: "14px 16px", fontSize: 14, fontWeight: 600, color: "#1f2a23" }}>₹{c.package}</td>
-                <td style={{ padding: "14px 16px", fontSize: 13, color: "#6b7280" }}>{c.openRoles}</td>
-                <td style={{ padding: "14px 16px" }}><Badge color={c.status === "Verified" ? "green" : "amber"}>{c.status}</Badge></td>
-                <td style={{ padding: "14px 16px", fontSize: 12, color: "#8a948c" }}>{c.joined}</td>
+                <td style={{ padding: "14px 16px", fontSize: 13, color: "#6b7280" }}>{c.recruiter?.sector || "Tech"}</td>
+                <td style={{ padding: "14px 16px", fontSize: 14, fontWeight: 600, color: "#1f2a23" }}>{c.recruiter?.package || "—"}</td>
+                <td style={{ padding: "14px 16px", fontSize: 13, color: "#6b7280" }}>{c.recruiter?.openRoles || 0}</td>
+                <td style={{ padding: "14px 16px" }}><Badge color={c.recruiter?.verified ? "green" : "amber"}>{c.recruiter?.verified ? "Verified" : "Pending"}</Badge></td>
+                <td style={{ padding: "14px 16px", fontSize: 12, color: "#8a948c" }}>{c.createdAt ? (c.createdAt as any).toDate?.().toLocaleDateString() : "—"}</td>
                 <td style={{ padding: "14px 16px" }}>
                   <div style={{ display: "flex", gap: 8 }}>
-                    {c.status !== "Verified" && <button onClick={() => verify(c.id)} style={{ border: "none", background: "#dce7de", padding: "6px 8px", borderRadius: 8, cursor: "pointer" }}><Ic d={ic.shield} size={14} color="#1f5c45" /></button>}
+                    {!c.recruiter?.verified && <button onClick={() => verify(c.uid)} style={{ border: "none", background: "#dce7de", padding: "6px 8px", borderRadius: 8, cursor: "pointer" }}><Ic d={ic.shield} size={14} color="#1f5c45" /></button>}
                     <button onClick={() => remove(c.id)} style={{ border: "none", background: "#fee2e2", padding: "6px 8px", borderRadius: 8, cursor: "pointer" }}><Ic d={ic.trash} size={14} color="#991b1b" /></button>
                   </div>
                 </td>
@@ -328,12 +353,22 @@ const StudentsPage = ({ students, setStudents, showToast }) => {
   const [filter, setFilter] = useState("All");
 
   const filtered = students.filter(s => {
-    const mS = s.name.toLowerCase().includes(search.toLowerCase()) || s.branch.toLowerCase().includes(search.toLowerCase());
-    const mF = filter === "All" || s.status === filter;
+    const mS = s.name.toLowerCase().includes(search.toLowerCase()) || (s.student?.branch || "").toLowerCase().includes(search.toLowerCase());
+    const isPlaced = false; // logic for actual placements from applications needed later
+    const status = isPlaced ? "Placed" : (s.student?.verified ? "Verified" : "Pending");
+    const mF = filter === "All" || status === filter;
     return mS && mF;
   });
 
-  const verify = id => { setStudents(p => p.map(s => s.id === id ? { ...s, verified: true } : s)); showToast("Student verified!", "success"); };
+  const verify = async (uid: string) => {
+    try {
+      await verifyUser(uid, "student");
+      setStudents(p => p.map(s => s.uid === uid ? { ...s, student: { ...s.student, verified: true } } : s));
+      showToast("Student verified!", "success");
+    } catch (err) {
+      showToast("Verification failed", "error");
+    }
+  };
   const sc = { Placed: "green", Unplaced: "red", Pending: "amber" };
 
   return (
@@ -344,7 +379,7 @@ const StudentsPage = ({ students, setStudents, showToast }) => {
           <p style={{ color: "#6b7280", fontSize: 14, marginTop: 4 }}>{students.length} registered · {students.filter(s => s.status === "Placed").length} placed</p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          {["All", "Placed", "Unplaced", "Pending"].map(f => (
+          {["All", "Verified", "Pending"].map(f => (
             <button key={f} onClick={() => setFilter(f)} style={{ padding: "8px 16px", borderRadius: 100, fontSize: 12, fontWeight: 600, cursor: "pointer", border: filter === f ? "none" : "1px solid #d6dad6", background: filter === f ? "#1f3d2b" : "#fff", color: filter === f ? "#fff" : "#6b7280", fontFamily: "inherit" }}>{f}</button>
           ))}
         </div>
@@ -352,24 +387,29 @@ const StudentsPage = ({ students, setStudents, showToast }) => {
       <SearchBar value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name or branch..." />
       <div style={{ background: "#fff", borderRadius: 20, border: "1px solid #dcdedc", overflow: "hidden" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead><tr style={{ background: "#fafafa", borderBottom: "1px solid #dcdedc" }}>{["Student","Branch","CGPA","Status","Company","Package","Actions"].map(h => <TH key={h}>{h}</TH>)}</tr></thead>
+          <thead><tr style={{ background: "#fafafa", borderBottom: "1px solid #dcdedc" }}>{["Student","Branch","CGPA","Resume","Status","Actions"].map(h => <TH key={h}>{h}</TH>)}</tr></thead>
           <tbody>
             {filtered.map((s, i) => (
-              <tr key={s.id} style={{ borderBottom: "1px solid #f9f9fb", background: i % 2 === 0 ? "#fff" : "#fafafe" }}>
+              <tr key={s.uid} style={{ borderBottom: "1px solid #f9f9fb", background: i % 2 === 0 ? "#fff" : "#fafafe" }}>
                 <td style={{ padding: "14px 16px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#ede9fe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#5b21b6" }}>{s.name[0]}</div>
-                    <div><div style={{ fontSize: 14, fontWeight: 600, color: "#1f2a23" }}>{s.name}</div><div style={{ fontSize: 11, color: "#8a948c" }}>ID: {s.id}</div></div>
+                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#ede9fe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#5b21b6" }}>{s.name?.[0] || "?"}</div>
+                    <div><div style={{ fontSize: 14, fontWeight: 600, color: "#1f2a23" }}>{s.name}</div><div style={{ fontSize: 11, color: "#8a948c" }}>ID: {s.uid.slice(0, 8)}</div></div>
                   </div>
                 </td>
-                <td style={{ padding: "14px 16px" }}><Badge color="purple">{s.branch}</Badge></td>
-                <td style={{ padding: "14px 16px", fontSize: 14, fontWeight: 600, color: s.cgpa >= 9 ? "#1f5c45" : "#1f2a23" }}>{s.cgpa}</td>
-                <td style={{ padding: "14px 16px" }}><Badge color={sc[s.status]}>{s.status}</Badge></td>
-                <td style={{ padding: "14px 16px", fontSize: 13, color: "#6b7280" }}>{s.company}</td>
-                <td style={{ padding: "14px 16px", fontSize: 14, fontWeight: 600, color: "#1f2a23" }}>{s.package ? `₹${s.package} LPA` : "—"}</td>
+                <td style={{ padding: "14px 16px" }}><Badge color="purple">{s.student?.branch || "—"}</Badge></td>
+                <td style={{ padding: "14px 16px", fontSize: 14, fontWeight: 600, color: (s.student?.cgpa || 0) >= 9 ? "#1f5c45" : "#1f2a23" }}>{s.student?.cgpa || "—"}</td>
                 <td style={{ padding: "14px 16px" }}>
-                  {!s.verified
-                    ? <button onClick={() => verify(s.id)} style={{ border: "none", background: "#dbeafe", padding: "6px 8px", borderRadius: 8, cursor: "pointer" }}><Ic d={ic.check} size={14} color="#1e40af" /></button>
+                  {s.student?.resume?.downloadUrl ? (
+                    <a href={s.student.resume.downloadUrl} target="_blank" rel="noreferrer" style={{ color: "#1f3d2b", textDecoration: "underline", fontSize: 13, fontWeight: 600 }}>Download PDF</a>
+                  ) : (
+                    <span style={{ color: "#8a948c", fontSize: 13 }}>No Resume</span>
+                  )}
+                </td>
+                <td style={{ padding: "14px 16px" }}><Badge color={s.student?.verified ? "green" : "amber"}>{s.student?.verified ? "Verified" : "Pending"}</Badge></td>
+                <td style={{ padding: "14px 16px" }}>
+                  {!s.student?.verified
+                    ? <button onClick={() => verify(s.uid)} style={{ border: "none", background: "#dbeafe", padding: "6px 8px", borderRadius: 8, cursor: "pointer" }}><Ic d={ic.check} size={14} color="#1e40af" /></button>
                     : <Badge color="blue">Verified</Badge>}
                 </td>
               </tr>
@@ -390,11 +430,24 @@ const JobsPage = ({ jobs, setJobs, showToast }) => {
 
   const filtered = jobs.filter(j => j.role.toLowerCase().includes(search.toLowerCase()) || j.company.toLowerCase().includes(search.toLowerCase()));
 
-  const add = () => {
+  const add = async () => {
     if (!form.role || !form.company) return showToast("Fill required fields", "error");
-    setJobs(p => [...p, { id: Date.now(), ...form, package: +form.package || 0, applicants: 0, posted: new Date().toISOString().split("T")[0] }]);
-    setModal(false); setForm({ role: "", company: "", type: "Full-time", package: "", status: "Active" });
-    showToast("Job posting created!", "success");
+    try {
+      const jobId = await createJobPosting({
+        companyUid: "admin_broadcast",
+        companyName: form.company,
+        role: form.role,
+        type: form.type as any,
+        location: "Remote/Campus",
+        package: form.package,
+        eligibility: { minCgpa: 6.0, branch: "All Branches" }
+      });
+      setJobs(p => [{ id: jobId, ...form, applicationsCount: 0, createdAt: { seconds: Date.now() / 1000 } } as any, ...p]);
+      setModal(false); setForm({ role: "", company: "", type: "Full-time", package: "", status: "Active" });
+      showToast("Job posting created!", "success");
+    } catch (err) {
+      showToast("Failed to create job", "error");
+    }
   };
   const toggle = id => { setJobs(p => p.map(j => j.id === id ? { ...j, status: j.status === "Active" ? "Paused" : "Active" } : j)); showToast("Status updated", "info"); };
   const remove = id => { setJobs(p => p.filter(j => j.id !== id)); showToast("Job removed", "error"); };
@@ -419,10 +472,10 @@ const JobsPage = ({ jobs, setJobs, showToast }) => {
                 <td style={{ padding: "14px 16px", fontSize: 14, fontWeight: 600, color: "#1f2a23" }}>{j.role}</td>
                 <td style={{ padding: "14px 16px", fontSize: 13, color: "#6b7280" }}>{j.company}</td>
                 <td style={{ padding: "14px 16px" }}><Badge color={j.type === "Internship" ? "blue" : "purple"}>{j.type}</Badge></td>
-                <td style={{ padding: "14px 16px", fontSize: 14, fontWeight: 600, color: "#1f2a23" }}>₹{j.package} LPA</td>
-                <td style={{ padding: "14px 16px", fontSize: 13, color: "#6b7280" }}>{j.applicants}</td>
-                <td style={{ padding: "14px 16px" }}><Badge color={sc[j.status]}>{j.status}</Badge></td>
-                <td style={{ padding: "14px 16px", fontSize: 12, color: "#8a948c" }}>{j.posted}</td>
+                <td style={{ padding: "14px 16px", fontSize: 14, fontWeight: 600, color: "#1f2a23" }}>{j.package}</td>
+                <td style={{ padding: "14px 16px", fontSize: 13, color: "#6b7280" }}>{j.applicationsCount || 0}</td>
+                <td style={{ padding: "14px 16px" }}><Badge color={j.status === "Active" ? "green" : "gray"}>{j.status}</Badge></td>
+                <td style={{ padding: "14px 16px", fontSize: 12, color: "#8a948c" }}>{j.createdAt ? (new Date((j.createdAt as any)?.seconds * 1000)).toLocaleDateString() : "—"}</td>
                 <td style={{ padding: "14px 16px" }}>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button onClick={() => toggle(j.id)} style={{ border: "none", background: "#fef3c7", padding: "6px 8px", borderRadius: 8, cursor: "pointer" }}><Ic d={ic.pause} size={14} color="#92400e" /></button>
@@ -508,9 +561,10 @@ const SettingsModal = ({ onClose }) => {
 
 export default function AdminDashboard() {
   const [page, setPage] = useState("analytics");
-  const [companies, setCompanies] = useState(initialCompanies);
-  const [students, setStudents] = useState(initialStudents);
-  const [jobs, setJobs] = useState(initialJobs);
+  const [companies, setCompanies] = useState<UserProfileDoc[]>([]);
+  const [students, setStudents] = useState<UserProfileDoc[]>([]);
+  const [jobs, setJobs] = useState<JobDoc[]>([]);
+  const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
   const [notifs, setNotifs] = useState(INITIAL_NOTIFS);
   const [showNotif, setShowNotif] = useState(false);
@@ -518,8 +572,28 @@ export default function AdminDashboard() {
   const [showProfile, setShowProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [studentsData, recruitersData, jobsData] = await Promise.all([
+          listAllStudents(),
+          listAllRecruiters(),
+          listAllJobs()
+        ]);
+        setStudents(studentsData);
+        setCompanies(recruitersData);
+        setJobs(jobsData);
+      } catch (err) {
+        console.error("Error fetching admin data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   const showToast = (msg, type = "success") => { setToast({ msg, type }); setTimeout(() => setToast(null), 2800); };
-  const placed = students.filter(s => s.status === "Placed").length;
+  const verifiedCount = students.filter(s => s.student?.verified).length;
   const unread = notifs.filter(n => n.unread).length;
 
   const navItems = [
@@ -563,11 +637,11 @@ export default function AdminDashboard() {
 
         <div style={{ marginTop: "auto" }}>
           <div style={{ background: "#eef2ee", borderRadius: 14, padding: 14, marginBottom: 12 }}>
-            <div style={{ fontSize: 11, color: "#8a948c", marginBottom: 6 }}>Placement progress</div>
+            <div style={{ fontSize: 11, color: "#8a948c", marginBottom: 6 }}>Verification progress</div>
             <div style={{ height: 6, background: "#d6dad6", borderRadius: 100, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${Math.round(placed / students.length * 100)}%`, background: "#1f3d2b", borderRadius: 100, transition: "width 0.4s" }} />
+              <div style={{ height: "100%", width: `${students.length > 0 ? Math.round(verifiedCount / students.length * 100) : 0}%`, background: "#1f3d2b", borderRadius: 100, transition: "width 0.4s" }} />
             </div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#1f3d2b", marginTop: 6 }}>{Math.round(placed / students.length * 100)}% placed</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#1f3d2b", marginTop: 6 }}>{students.length > 0 ? Math.round(verifiedCount / students.length * 100) : 0}% verified</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12, background: "#eef2ee" }}>
             <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#1f3d2b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>A</div>

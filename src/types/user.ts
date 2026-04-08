@@ -14,11 +14,18 @@ export type StudentProfile = {
   skills?: string[];
   resume?: ResumeInfo;
   verified?: boolean;
-  // reserved for future: aiScore?: number
+  college?: string;
+  year?: string;
+  linkedin?: string;
+  github?: string;
 };
 
 export type RecruiterProfile = {
   companyName?: string;
+  verified?: boolean;
+  sector?: string;
+  package?: string;
+  openRoles?: number;
 };
 
 // `Record<string, never>` avoids "empty object type" lint errors.

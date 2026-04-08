@@ -9,7 +9,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { applyToJob } from "@/firebase/applications";
 import { listActiveJobs, type JobDoc } from "@/firebase/jobs";
 
-type JobWithEligibility = JobDoc & { eligible: boolean };
+type JobWithEligibility = JobDoc & { eligible: boolean; reason?: string };
 
 const StudentJobs = () => {
   const { loading, profile, user } = useAuth();
@@ -26,21 +26,31 @@ const StudentJobs = () => {
   const studentName = profile?.name ?? "";
   const isStudentVerified = profile?.student?.verified ?? false;
 
-  const computeEligible = (job: JobDoc) => {
+  const computeEligible = (job: JobDoc): { eligible: boolean; reason?: string } => {
     const minCgpa = job.eligibility?.minCgpa;
-    if (typeof minCgpa === "number" && studentCgpa < minCgpa) return false;
+    if (typeof minCgpa === "number" && minCgpa > 0 && studentCgpa < minCgpa) {
+      return { eligible: false, reason: `Requires ${minCgpa.toFixed(1)} CGPA` };
+    }
 
-    const branchRule = job.eligibility?.branch;
-    if (branchRule && branchRule !== "All Branches" && branchRule !== studentBranch) return false;
+    const branchRule = job.eligibility?.branch?.trim();
+    if (branchRule && branchRule !== "All Branches") {
+      const sBranch = (studentBranch || "").trim().toLowerCase();
+      const jBranch = branchRule.toLowerCase();
+      if (sBranch !== jBranch) {
+        return { eligible: false, reason: `Only for ${branchRule} branch` };
+      }
+    }
 
     const requiredSkills = job.eligibility?.requiredSkills ?? [];
     if (requiredSkills.length > 0) {
       const requiredLower = requiredSkills.map((s) => s.toLowerCase());
       const matchCount = requiredLower.filter((s) => studentSkills.includes(s)).length;
-      if (matchCount === 0) return false;
+      if (matchCount === 0) {
+        return { eligible: false, reason: `Missing required skills (${requiredSkills.slice(0, 2).join(", ")}...)` };
+      }
     }
 
-    return true;
+    return { eligible: true };
   };
 
   useEffect(() => {
@@ -50,14 +60,13 @@ const StudentJobs = () => {
       try {
         setIsLoadingJobs(true);
         const active = await listActiveJobs();
-        const mapped = active.map((j) => ({ ...j, eligible: computeEligible(j) }));
+        const mapped = active.map((j) => {
+          const res = computeEligible(j);
+          return { ...j, ...res };
+        });
         setJobs(mapped);
       } catch (err) {
-        toast({
-          title: "Could not load jobs",
-          description: err instanceof Error ? err.message : "Please try again.",
-          variant: "destructive",
-        });
+        toast.error(err instanceof Error ? err.message : "Could not load jobs");
       } finally {
         setIsLoadingJobs(false);
       }
@@ -82,11 +91,7 @@ const StudentJobs = () => {
     if (!user || !profile) return;
 
     if (!isStudentVerified) {
-      toast({
-        title: "Account pending verification",
-        description: "Admin must verify your profile before you can apply.",
-        variant: "destructive",
-      });
+      toast.error("Account pending verification. Admin must verify your profile before you can apply.");
       return;
     }
 
@@ -113,11 +118,7 @@ const StudentJobs = () => {
 
       setJobs((prev) => prev.filter((j) => j.id !== jobId));
     } catch (err) {
-      toast({
-        title: "Application failed",
-        description: err instanceof Error ? err.message : "Please try again.",
-        variant: "destructive",
-      });
+      toast.error(err instanceof Error ? err.message : "Application failed");
     }
   };
 
@@ -175,10 +176,10 @@ const StudentJobs = () => {
                   <Badge
                     variant="outline"
                     className={`rounded-full px-3 text-[10px] uppercase font-bold tracking-widest bg-transparent ${
-                      job.eligible ? "text-primary border-primary/20" : "text-muted-foreground border-primary/10"
+                      job.eligible ? "text-primary border-primary/20" : "text-destructive border-destructive/20"
                     }`}
                   >
-                    {job.eligible ? "Smart Match" : "Locked"}
+                    {job.eligible ? "Smart Match" : job.reason || "Locked"}
                   </Badge>
                 </div>
 
