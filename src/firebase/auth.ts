@@ -13,6 +13,15 @@ import type { AppRole } from "@/types/app";
 
 export type AuthenticatedUser = Pick<User, "uid" | "email">;
 
+export function validateEmailRoleMatch(email: string, role: AppRole) {
+  if (role === "student" && !email.toLowerCase().endsWith("@igdtuw.ac.in")) {
+    throw new Error("Students must use an @igdtuw.ac.in email address.");
+  }
+  if (role === "recruiter" && !email.toLowerCase().endsWith("@company.com")) {
+    throw new Error("Recruiters must use a @company.com email address.");
+  }
+}
+
 export function listenToAuthStateChanges(cb: (user: AuthenticatedUser | null) => void) {
   return onAuthStateChanged(auth, (firebaseUser) => {
     if (!firebaseUser?.uid) {

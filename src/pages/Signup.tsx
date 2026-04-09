@@ -18,7 +18,7 @@ import {
   X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { signInWithGoogle, signUp } from "@/firebase/auth";
+import { signInWithGoogle, signUp, validateEmailRoleMatch } from "@/firebase/auth";
 import { useAuth } from "@/auth/AuthProvider";
 
 const Signup = () => {
@@ -62,9 +62,9 @@ const Signup = () => {
     
     setIsLoading(true);
     try {
-      if (role === "recruiter" && !email.endsWith("@company.com")) {
-        throw new Error("Recruiters must use a @company.com email address.");
-      }
+      // Validate email domain based on role
+      validateEmailRoleMatch(email, role);
+
       await signUp({ email, password, role, name });
       toast({ title: "Account created!", description: `Welcome to Hireque as ${role}.` });
       // Set pending role and let useEffect handle navigation once profile loads
@@ -93,11 +93,16 @@ const Signup = () => {
     setIsLoading(true);
     try {
       const { email: googleEmail } = await signInWithGoogle({ role });
-      if (role === "recruiter" && !googleEmail.endsWith("@company.com")) {
-        // Optionally sign out or delete the user if they signed up with @gmail.com but selected recruiter?
-        // For now, let's just toast an error.
-        throw new Error("Recruiters must use a @company.com email address.");
+      
+      // Post-sign-up validation for Google
+      try {
+        validateEmailRoleMatch(googleEmail, role);
+      } catch (validationErr) {
+        // If validation fails, we might want to sign the user out or delete the restricted user?
+        // For now, let's just throw the error to the catch block
+        throw validationErr;
       }
+
       toast({ title: "Account created!", description: `Welcome to Hireque as ${role}.` });
       // Set pending role and let useEffect handle navigation once profile loads
       setPendingRole(role);
@@ -224,7 +229,7 @@ const Signup = () => {
                       <Input
                         id="email"
                         type="email"
-                        placeholder="name@company.com"
+                        placeholder={role === "student" ? "name@igdtuw.ac.in" : role === "recruiter" ? "name@company.com" : "name@company.com"}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required

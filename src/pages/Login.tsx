@@ -17,7 +17,7 @@ import {
   X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { ensureUserProfile, signIn, signInWithGoogle } from "@/firebase/auth";
+import { ensureUserProfile, signIn, signInWithGoogle, validateEmailRoleMatch } from "@/firebase/auth";
 import { useAuth } from "@/auth/AuthProvider";
 
 const Login = () => {
@@ -49,6 +49,9 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
+      // Add validation before signing in
+      validateEmailRoleMatch(email, role);
+
       const { uid, email: signedInEmail } = await signIn({ email, password });
       await ensureUserProfile({
         uid,
@@ -73,7 +76,17 @@ const Login = () => {
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     try {
-      await signInWithGoogle({ role });
+      const { email: googleEmail } = await signInWithGoogle({ role });
+      
+      // Post-sign-in validation for Google
+      try {
+        validateEmailRoleMatch(googleEmail, role);
+      } catch (validationErr) {
+        // If validation fails, we might want to sign the user out?
+        // For now, let's just throw the error to the catch block
+        throw validationErr;
+      }
+
       toast({ title: "Welcome!", description: `Signed in with Google as ${role}.` });
       // Set pending role and let useEffect handle navigation once profile loads
       setPendingRole(role);
@@ -178,7 +191,7 @@ const Login = () => {
                       <Input
                         id="email"
                         type="email"
-                        placeholder="name@university.edu"
+                        placeholder={role === "student" ? "name@igdtuw.ac.in" : role === "recruiter" ? "name@company.com" : "name@university.edu"}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
