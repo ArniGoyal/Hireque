@@ -88,39 +88,43 @@ const StudentJobs = () => {
   }, [jobs, search, filterEligible]);
 
   const handleApply = async (jobId: string) => {
-    if (!user || !profile) return;
+  if (!user || !profile) return;
 
-    if (!isStudentVerified) {
-      toast.error("Account pending verification. Admin must verify your profile before you can apply.");
-      return;
-    }
+  const job = jobs.find((j) => j.id === jobId);
+  if (!job) return;
 
-    const job = jobs.find((j) => j.id === jobId);
-    if (!job) return;
-    if (!job.eligible) return;
+  if (!isStudentVerified) {
+    toast.error("Please verify your profile first");
+    return;
+  }
 
-    try {
-      await applyToJob({
-        jobId: job.id,
-        companyUid: job.companyUid,
-        companyName: job.companyName,
-        studentUid: user.uid,
-        studentName,
-        studentBranch,
-        studentCgpa,
-        studentSkills: profile?.student?.skills ?? [],
-        role: job.role,
-      });
+  if (!job.eligible) {
+    toast.error(job.reason || "You are not eligible for this role");
+    return;
+  }
 
-      toast.success(`Applied to ${job.companyName}`, {
-        description: `${job.role} application submitted successfully`,
-      });
+  try {
+    await applyToJob({
+      jobId: job.id,
+      companyUid: job.companyUid,
+      companyName: job.companyName,
+      studentUid: user.uid,
+      studentName,
+      studentBranch,
+      studentCgpa,
+      studentSkills: profile?.student?.skills ?? [],
+      role: job.role,
+    });
 
-      setJobs((prev) => prev.filter((j) => j.id !== jobId));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Application failed");
-    }
-  };
+    toast.success(`Applied to ${job.companyName}`, {
+      description: `${job.role} application submitted successfully`,
+    });
+
+    setJobs((prev) => prev.filter((j) => j.id !== jobId));
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : "Application failed");
+  }
+};
 
   return (
     <DashboardLayout role="student">
@@ -206,7 +210,8 @@ const StudentJobs = () => {
                   </div>
                   <Button
                     onClick={() => handleApply(job.id)}
-                    disabled={!job.eligible || !isStudentVerified}
+                    disabled={!job.eligible}
+                    // disabled={!job.eligible || !isStudentVerified}
                     className="rounded-full font-bold shadow-md shadow-primary/10 hover:-translate-y-0.5 transition-transform disabled:hover:translate-y-0 disabled:opacity-50"
                   >
                     Apply

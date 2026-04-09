@@ -72,6 +72,7 @@ const [githubDraft, setGithubDraft] = useState("");
 const [collegeOptions, setCollegeOptions] = useState<string[]>([]);
 const [isEditing, setIsEditing] = useState(false);
 const [nameDraft, setNameDraft] = useState("");
+const [, setRefresh] = useState(0);
 
   useEffect(() => {
     if (!profile || isEditing) return;
@@ -150,46 +151,67 @@ const [nameDraft, setNameDraft] = useState("");
   const handleSaveProfile = async () => {
   if (!user) return;
 
-  if (linkedinDraft && !isValidUrl(linkedinDraft)) {
-    toast.error("Invalid LinkedIn URL");
-    return;
+  try {
+    // ✅ Validate URLs
+    if (linkedinDraft && !isValidUrl(linkedinDraft)) {
+      toast.error("Invalid LinkedIn URL");
+      return;
+    }
+
+    if (githubDraft && !isValidUrl(githubDraft)) {
+      toast.error("Invalid GitHub URL");
+      return;
+    }
+
+    // ✅ Clean CGPA
+    const cgpaVal =
+      cgpaDraft.trim().length === 0
+        ? null
+        : Number(cgpaDraft.trim().replace(",", "."));
+
+    const cgpaClean =
+      typeof cgpaVal === "number" && !Number.isNaN(cgpaVal)
+        ? cgpaVal
+        : null;
+
+    // ✅ Clean skills
+    const skillsArr = skillsDraft
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 30);
+
+    // ✅ Final safe object (NO undefined)
+    const updatedData = {
+      cgpa: cgpaClean,
+      branch: branchDraft.trim() || null,
+      skills: skillsArr,
+      college: collegeDraft.trim() || null,
+      year: yearDraft || null,
+      linkedin: linkedinDraft.trim() || null,
+      github: githubDraft.trim() || null,
+      name: nameDraft.trim() || null,
+    };
+
+    await updateStudentProfile(user.uid, updatedData);
+
+    // 🔥 IMPORTANT: update UI instantly
+    profile.student = {
+      ...profile.student,
+      ...updatedData,
+    };
+
+    // 🔥 FORCE RE-RENDER
+    setRefresh((prev) => prev + 1);
+
+    setIsEditing(false);
+
+    toast.success("Profile saved! 🚀");
+
+  } catch (error) {
+    console.error(error);
+    toast.error("Failed to save profile");
   }
-
-  if (githubDraft && !isValidUrl(githubDraft)) {
-    toast.error("Invalid GitHub URL");
-    return;
-  }
-
-  const cgpaVal =
-    cgpaDraft.trim().length === 0
-      ? undefined
-      : Number(cgpaDraft.trim().replace(",", "."));
-
-  const cgpaClean =
-    typeof cgpaVal === "number" && !Number.isNaN(cgpaVal)
-      ? cgpaVal
-      : undefined;
-
-  const skillsArr = skillsDraft
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .slice(0, 30);
-
-  await updateStudentProfile(user.uid, {
-    cgpa: cgpaClean,
-    branch: branchDraft.trim() || undefined,
-    skills: skillsArr,
-    college: collegeDraft.trim() || undefined,
-    year: yearDraft || undefined,
-    linkedin: linkedinDraft.trim() || undefined,
-    github: githubDraft.trim() || undefined,
-    name: nameDraft.trim() || undefined,
-  });
-
-  setIsEditing(false);
-
-  toast.success("Profile saved!");
 };
 
   if (loading || !profile || !user || !student) {
