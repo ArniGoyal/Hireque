@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -19,6 +20,8 @@ import { listAllStudents, listAllRecruiters, verifyUser } from "@/firebase/users
 import { listAllJobs, createJobPosting } from "@/firebase/jobs";
 import type { UserProfileDoc } from "@/types/user";
 import type { JobDoc } from "@/firebase/jobs";
+import { signOut } from "firebase/auth";
+import { auth } from "@/firebase/client";
 
 // ─── DATA ────────────────────────────────────────────────────────────────────
 
@@ -771,7 +774,13 @@ export default function AdminDashboard() {
                     </button>
                   ))}
                   <div style={{ borderTop: "1px solid #dcdedc" }}>
-                    <button onClick={() => window.confirm("Logout?") && showToast("Logged out!", "error")}
+                    <button
+                      onClick={async () => {
+                      if (window.confirm("Logout?")) {
+                      await signOut(auth);
+                      window.location.href = "/login";
+                     }
+                    }}
                       style={{ width: "100%", padding: "10px 14px", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "#991b1b", fontWeight: 600, fontFamily: "inherit", textAlign: "left" }}
                       onMouseEnter={e => e.currentTarget.style.background = "#fee2e2"}
                       onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
