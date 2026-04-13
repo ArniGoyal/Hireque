@@ -187,13 +187,13 @@ const Btn = ({ children, variant = "primary", onClick, style: sx = {} }) => {
 
 const SearchBar = ({ value, onChange, placeholder }) => (
   <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#fff", border: "1px solid #d6dad6", borderRadius: 14, padding: "10px 16px" }}>
-    <Ic d={ic.search} size={16} color="##8a948c" />
+    <Ic d={ic.search} size={16} color="#8a948c" />
     <input value={value} onChange={onChange} placeholder={placeholder} style={{ border: "none", outline: "none", fontSize: 14, color: "#1f2a23", flex: 1, background: "transparent", fontFamily: "inherit" }} />
   </div>
 );
 
 const TH = ({ children }) => (
-  <th style={{ padding: "12px 16px", fontSize: 11, fontWeight: 700, color: "##8a948c", textTransform: "uppercase", letterSpacing: "0.05em", textAlign: "left" }}>{children}</th>
+  <th style={{ padding: "12px 16px", fontSize: 11, fontWeight: 700, color: "#8a948c", textTransform: "uppercase", letterSpacing: "0.05em", textAlign: "left" }}>{children}</th>
 );
 
 // ─── ANALYTICS PAGE ──────────────────────────────────────────────────────────
@@ -310,7 +310,7 @@ const CompaniesPage = ({ companies, setCompanies, showToast }) => {
                 <td style={{ padding: "14px 16px", fontSize: 14, fontWeight: 600, color: "#1f2a23" }}>{c.recruiter?.package || "—"}</td>
                 <td style={{ padding: "14px 16px", fontSize: 13, color: "#6b7280" }}>{c.recruiter?.openRoles || 0}</td>
                 <td style={{ padding: "14px 16px" }}><Badge color={c.recruiter?.verified ? "green" : "amber"}>{c.recruiter?.verified ? "Verified" : "Pending"}</Badge></td>
-                <td style={{ padding: "14px 16px", fontSize: 12, color: "#8a948c" }}>{c.createdAt ? (c.createdAt as any).toDate?.().toLocaleDateString() : "—"}</td>
+                <td style={{ padding: "14px 16px", fontSize: 12, color: "#8a948c" }}>{c.createdAt ? c.createdAt?.toDate?.()?.toLocaleDateString?.() || "—" : "-"}</td>
                 <td style={{ padding: "14px 16px" }}>
                   <div style={{ display: "flex", gap: 8 }}>
                     {!c.recruiter?.verified && <button onClick={() => verify(c.uid)} style={{ border: "none", background: "#dce7de", padding: "6px 8px", borderRadius: 8, cursor: "pointer" }}><Ic d={ic.shield} size={14} color="#1f5c45" /></button>}
@@ -437,13 +437,23 @@ const JobsPage = ({ jobs, setJobs, showToast }) => {
         companyUid: "admin_broadcast",
         companyName: form.company,
         role: form.role,
-        type: form.type as any,
+        type: form.type as "Full-time" | "Internship",
         location: "Remote/Campus",
         package: form.package,
         eligibility: { minCgpa: 6.0, branch: "All Branches" }
       });
-      setJobs(p => [{ id: jobId, ...form, applicationsCount: 0, createdAt: { seconds: Date.now() / 1000 } } as any, ...p]);
-      setModal(false); setForm({ role: "", company: "", type: "Full-time", package: "", status: "Active" });
+
+    setJobs(p => [
+    {
+    id: jobId,
+    ...form,
+    applicationsCount: 0,
+    createdAt: { seconds: Date.now() / 1000 }
+    },
+    ...p
+    ]);
+
+setModal(false); setForm({ role: "", company: "", type: "Full-time", package: "", status: "Active" });
       showToast("Job posting created!", "success");
     } catch (err) {
       showToast("Failed to create job", "error");
@@ -475,8 +485,11 @@ const JobsPage = ({ jobs, setJobs, showToast }) => {
                 <td style={{ padding: "14px 16px", fontSize: 14, fontWeight: 600, color: "#1f2a23" }}>{j.package}</td>
                 <td style={{ padding: "14px 16px", fontSize: 13, color: "#6b7280" }}>{j.applicationsCount || 0}</td>
                 <td style={{ padding: "14px 16px" }}><Badge color={j.status === "Active" ? "green" : "gray"}>{j.status}</Badge></td>
-                <td style={{ padding: "14px 16px", fontSize: 12, color: "#8a948c" }}>{j.createdAt ? (new Date((j.createdAt as any)?.seconds * 1000)).toLocaleDateString() : "—"}</td>
-                <td style={{ padding: "14px 16px" }}>
+                  <td style={{ padding: "14px 16px", fontSize: 12, color: "#8a948c" }}>
+                  {j.createdAt?.seconds
+                  ? new Date(j.createdAt.seconds * 1000).toLocaleDateString() : "-"}
+                  </td>
+                  <td style={{ padding: "14px 16px" }}>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button onClick={() => toggle(j.id)} style={{ border: "none", background: "#fef3c7", padding: "6px 8px", borderRadius: 8, cursor: "pointer" }}><Ic d={ic.pause} size={14} color="#92400e" /></button>
                     <button onClick={() => remove(j.id)} style={{ border: "none", background: "#fee2e2", padding: "6px 8px", borderRadius: 8, cursor: "pointer" }}><Ic d={ic.trash} size={14} color="#991b1b" /></button>
@@ -522,7 +535,7 @@ const ProfileModal = ({ onClose }) => (
         <div style={{ fontSize: 18, fontWeight: 700, color: "#1f2a23" }}>Super Admin</div>
         <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>admin@college.edu</div>
       </div>
-      <div style={{ width: "100%", background: "eef2ee", borderRadius: 14, padding: "1rem" }}>
+      <div style={{ width: "100%", background: "#eef2ee", borderRadius: 14, padding: "1rem" }}>
         {[["Role","Placement Administrator"],["College","IGDTUW Placement Cell"],["Access","Full Control"],["Last Login","Today, 8:04 PM"]].map(([k, v]) => (
           <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #dcdedc", fontSize: 13 }}>
             <span style={{ color: "#8a948c", fontWeight: 600 }}>{k}</span>
@@ -535,9 +548,18 @@ const ProfileModal = ({ onClose }) => (
   </Overlay>
 );
 
-const SettingsModal = ({ onClose }) => {
+  const SettingsModal = ({ onClose, darkMode, setDarkMode }) => {
   const [toggles, setToggles] = useState([true, false, false, false]);
   const items = ["Email notifications", "Auto-verify companies", "Dark mode", "Two-factor auth"];
+
+const handleToggle = (i) => {
+  if (i === 2) {
+    setDarkMode(prev => !prev);
+  } else {
+    setToggles(t => t.map((v, j) => j === i ? !v : v));
+  }
+};
+
   return (
     <Overlay onClose={onClose}>
       <ModalHeader title="Settings" onClose={onClose} />
@@ -545,10 +567,35 @@ const SettingsModal = ({ onClose }) => {
         {items.map((label, i) => (
           <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid #dcdedc" }}>
             <span style={{ fontSize: 14, fontWeight: 500, color: "#1f2a23" }}>{label}</span>
-            <div onClick={() => setToggles(t => t.map((v, j) => j === i ? !v : v))}
-              style={{ width: 40, height: 22, borderRadius: 100, background: toggles[i] ? "#1f3d2b" : "#d6dad6", cursor: "pointer", position: "relative", transition: "background 0.2s" }}>
-              <div style={{ width: 16, height: 16, borderRadius: "50%", background: "#fff", position: "absolute", top: 3, left: toggles[i] ? 21 : 3, transition: "left 0.2s" }} />
-            </div>
+           <div
+  onClick={() => handleToggle(i)}
+  style={{
+    width: 40,
+    height: 22,
+    borderRadius: 100,
+    background: i === 2
+      ? (darkMode ? "#1f3d2b" : "#d6dad6")
+      : (toggles[i] ? "#1f3d2b" : "#d6dad6"),
+    cursor: "pointer",
+    position: "relative",
+    transition: "background 0.2s"
+  }}
+>
+  <div
+    style={{
+      width: 16,
+      height: 16,
+      borderRadius: "50%",
+      background: "#fff",
+      position: "absolute",
+      top: 3,
+      left: i === 2
+        ? (darkMode ? 21 : 3)
+        : (toggles[i] ? 21 : 3),
+      transition: "left 0.2s"
+    }}
+  />
+</div>
           </div>
         ))}
         <Btn onClick={onClose} style={{ width: "100%", justifyContent: "center", marginTop: 16 }}>Save Settings</Btn>
@@ -571,6 +618,13 @@ export default function AdminDashboard() {
   const [showMenu, setShowMenu] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+  return localStorage.getItem("darkMode") === "true";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("darkMode", darkMode.toString());
+      }, [darkMode]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -604,7 +658,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div style={{ display: "flex", width: "100vw", height: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", background: "#eef2ee", overflow: "hidden" }}
+    <div style={{ display: "flex", width: "100vw", height: "100vh", fontFamily: "'DM Sans', system-ui, sans-serif", background: darkMode ? "#0f172a" : "#eef2ee", overflow: "hidden" }}
       onClick={() => { setShowNotif(false); setShowMenu(false); }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
@@ -615,7 +669,7 @@ export default function AdminDashboard() {
       `}</style>
 
       {/* SIDEBAR */}
-      <aside style={{ width: 240, minWidth: 240, height: "100vh", background: "#fff", borderRight: "1px solid #dcdedc", display: "flex", flexDirection: "column", padding: "1.5rem 1rem", flexShrink: 0, overflowY: "auto" }}>
+      <aside style={{ width: 240, minWidth: 240, height: "100vh", background: darkMode ? "#111827" : "#fff", borderRight: "1px solid #dcdedc", display: "flex", flexDirection: "column", padding: "1.5rem 1rem", flexShrink: 0, overflowY: "auto" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: "1.5rem", padding: "0 0.25rem" }}>
           <div style={{ width: 36, height: 36, borderRadius: 10, background: "#1f3d2b", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Ic d={ic.shield} size={18} color="#e7ece7" />
@@ -654,7 +708,7 @@ export default function AdminDashboard() {
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, height: "100vh" }}>
 
         {/* TOPBAR */}
-        <header style={{ height: 64, minHeight: 64, background: "#fff", borderBottom: "1px solid #dcdedc", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 2rem", flexShrink: 0 }}>
+        <header style={{ height: 64, minHeight: 64, background: darkMode ? "#111827" : "#fff", borderBottom: "1px solid #dcdedc", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 2rem", flexShrink: 0 }}>
           <div style={{ fontSize: 13, color: "#8a948c"}}>
             Welcome back, <span style={{ color: "#1f3d2b", fontWeight: 600 }}>Admin</span> · {new Date().toLocaleDateString("en-IN", { dateStyle: "long" })}
           </div>
@@ -741,8 +795,13 @@ export default function AdminDashboard() {
 
       {/* MODALS */}
       {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}
-      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
-
+      {showSettings && (
+        <SettingsModal
+      onClose={() => setShowSettings(false)}
+      darkMode={darkMode}
+      setDarkMode={setDarkMode}
+      />
+  )}
       {/* TOAST */}
       {toast && (
         <div style={{ position: "fixed", bottom: 28, right: 28, background: toast.type === "success" ? "#1f5c45" : toast.type === "error" ? "#991b1b" : "#1e40af", color: "#fff", padding: "12px 20px", borderRadius: 14, fontSize: 13, fontWeight: 500, zIndex: 9999, boxShadow: "0 8px 24px rgba(0,0,0,0.2)", animation: "fadeUp 0.3s" }}>
