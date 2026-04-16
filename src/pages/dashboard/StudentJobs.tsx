@@ -24,7 +24,6 @@ const StudentJobs = () => {
   const studentBranch = profile?.student?.branch ?? "";
   const studentSkills = (profile?.student?.skills ?? []).map((s) => s.toLowerCase());
   const studentName = profile?.name ?? "";
-  const isStudentVerified = profile?.student?.verified ?? false;
 
   const computeEligible = (job: JobDoc): { eligible: boolean; reason?: string } => {
     const minCgpa = job.eligibility?.minCgpa;
@@ -92,11 +91,6 @@ const StudentJobs = () => {
 
   const job = jobs.find((j) => j.id === jobId);
   if (!job) return;
-
-  if (!isStudentVerified) {
-    toast.error("Please verify your profile first");
-    return;
-  }
 
   if (!job.eligible) {
     toast.error(job.reason || "You are not eligible for this role");
@@ -211,7 +205,6 @@ const StudentJobs = () => {
                   <Button
                     onClick={() => handleApply(job.id)}
                     disabled={!job.eligible}
-                    // disabled={!job.eligible || !isStudentVerified}
                     className="rounded-full font-bold shadow-md shadow-primary/10 hover:-translate-y-0.5 transition-transform disabled:hover:translate-y-0 disabled:opacity-50"
                   >
                     Apply

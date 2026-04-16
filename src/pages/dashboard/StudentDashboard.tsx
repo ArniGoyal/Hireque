@@ -26,7 +26,6 @@ const StudentDashboard = () => {
   const studentSkills = (profile?.student?.skills ?? []).map((s) => s.toLowerCase());
   const studentName = profile?.name ?? "";
   const resumeMissing = !(profile?.student?.resume?.downloadUrl);
-  const isStudentVerified = profile?.student?.verified ?? false;
 
   const aiScore = useMemo(() => {
     if (typeof profile?.student?.cgpa !== "number" || Number.isNaN(profile?.student?.cgpa)) return 88;
@@ -94,15 +93,6 @@ const StudentDashboard = () => {
     if (!user || !profile) return;
     const job = jobs.find((j) => j.id === jobId);
     if (!job || !job.eligible) return;
-
-    if (!isStudentVerified) {
-      toast({
-        title: "Account pending verification",
-        description: "Admin must verify your profile before applying.",
-        variant: "destructive",
-      });
-      return;
-    }
 
     try {
       await applyToJob({
@@ -256,7 +246,7 @@ const StudentDashboard = () => {
                       <Button
                         onClick={() => handleApply(job.id)}
                         size="sm"
-                        disabled={!job.eligible || !isStudentVerified}
+                        disabled={!job.eligible}
                         className="rounded-full shadow-md shadow-primary/10 px-6 font-bold bg-primary text-white hover:scale-105 transition-transform"
                       >
                         Apply Now

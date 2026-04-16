@@ -678,7 +678,7 @@ export default function AdminDashboard() {
             <Ic d={ic.shield} size={18} color="#e7ece7" />
           </div>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#1f2a23" }}>PlaceIT</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "#1f2a23" }}>Hireque</div>
             <div style={{ fontSize: 11, color: "#8a948c" }}>Admin Panel</div>
           </div>
         </div>
