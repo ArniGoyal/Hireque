@@ -20,8 +20,7 @@ import { listAllStudents, listAllRecruiters, verifyUser } from "@/firebase/users
 import { listAllJobs, createJobPosting } from "@/firebase/jobs";
 import type { UserProfileDoc } from "@/types/user";
 import type { JobDoc } from "@/firebase/jobs";
-import { signOut } from "firebase/auth";
-import { auth } from "@/firebase/client";
+import { useAuth } from "@/auth/AuthProvider";
 
 // ─── DATA ────────────────────────────────────────────────────────────────────
 
@@ -610,6 +609,8 @@ const handleToggle = (i) => {
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [page, setPage] = useState("analytics");
   const [companies, setCompanies] = useState<UserProfileDoc[]>([]);
   const [students, setStudents] = useState<UserProfileDoc[]>([]);
@@ -777,8 +778,8 @@ export default function AdminDashboard() {
                     <button
                       onClick={async () => {
                       if (window.confirm("Logout?")) {
-                      await signOut(auth);
-                      window.location.href = "/login";
+                      await signOut();
+                      navigate("/");
                      }
                     }}
                       style={{ width: "100%", padding: "10px 14px", border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "#991b1b", fontWeight: 600, fontFamily: "inherit", textAlign: "left" }}
