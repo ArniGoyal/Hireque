@@ -1,6 +1,5 @@
 import {
   createUserWithEmailAndPassword,
-  GoogleAuthProvider,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -70,23 +69,6 @@ export async function ensureUserProfile(args: {
   return await getUserProfile(args.uid);
 }
 
-export async function signInWithGoogle(args: { role: AppRole }) {
-  const provider = new GoogleAuthProvider();
-  const cred = await signInWithPopup(auth, provider);
-  const email = cred.user.email ?? "";
-  const name =
-    cred.user.displayName ??
-    (email.includes("@") ? email.split("@")[0] : "User");
-
-  await ensureUserProfile({
-    uid: cred.user.uid,
-    email,
-    role: args.role,
-    name,
-  });
-
-  return { uid: cred.user.uid, email };
-}
 
 export function signOutUser() {
   return signOut(auth);
