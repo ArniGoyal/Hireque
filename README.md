@@ -1,42 +1,40 @@
-# Hireque 🎓 
+# Hireque 🎓
 
 <div align="center">
   <img src="https://img.shields.io/badge/React-18-blue?style=for-the-badge&logo=react" alt="React" />
   <img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
   <img src="https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
+  <img src="https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black" alt="Firebase" />
+  <img src="https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase" />
   <img src="https://img.shields.io/badge/MIT-License-green?style=for-the-badge" alt="License" />
 </div>
 
 <br />
 
-A premium, AI-driven Campus Placement Management System built with a high-end "Paris Chic" aesthetic. Hireque bridges the gap between students, recruiters, and university administration through an elegant, intuitive, and highly interactive interface.
+A campus placement management system built with a "Paris Chic" editorial aesthetic. Hireque connects students, recruiters, and university administration through a single multi-role interface, with Firebase and Supabase handling auth, data, and file storage.
 
 ---
 
 ## 🌟 Core Modules
 
-The platform is divided into three distinct, powerful modules:
+The platform is divided into three role-based portals:
 
 ### 👨‍🎓 1. Student Portal
-Designed to empower students on their placement journey:
-- **Interactive Dashboard:** AI-curated job recommendations based on profile metrics.
-- **Smart Matches:** Instant visibility into eligible roles locked/unlocked via CGPA constraints.
-- **Application Pipeline System:** Track applications dynamically from "Applied" to "Interview" to "Selected".
-- **Dynamic Profile:** Dedicated space to highlight AI Resume Scores, academic standing, and technical skills.
-- **Interview Hub:** Centralized calendar to join technical calls, access preparation material, and view past performance.
+- **Eligibility-Matched Listings:** Jobs filtered by CGPA, branch, and skill criteria set per posting.
+- **Application Pipeline:** Track applications from "Applied" → "Interview" → "Selected".
+- **Profile:** Academic standing, technical skills, and resume upload (stored via Supabase).
+- **Interview Hub:** View scheduled interviews and prep material.
 
 ### 🏢 2. Recruiter Command Center
-Engineered to help companies curate elite talent globally:
-- **AI Applicant Scoring:** Automatically ranks applicants based on skill matrices.
-- **Live Shortlisting:** Streamlined 1-click candidate shortlisting and scheduling.
-- **Smart Job Postings:** Instantiate new job roles connected natively to campus eligibility constraints.
+- **Applicant Review:** Browse and shortlist applicants against posted eligibility criteria.
+- **Job Postings:** Create roles with eligibility constraints (CGPA / branch / required skills).
+- **Scheduling:** Move shortlisted candidates into the interview pipeline.
 
 ### 👩‍💼 3. Admin Control Center
-Built for university placement coordinators to maintain total governance:
-- **Real-Time Analytics:** Visualize monthly placements and demographic distributions natively via Recharts.
-- **Student Verification:** 1-Click interactive pipeline for batch processing student onboarding.
-- **Company Partnerships Management:** Track visits, openings, and company statuses.
+- **Analytics:** Visualize placement data via Recharts.
+- **Student Verification:** Approve pending student sign-ups.
+- **Company Management:** Track participating companies and their postings.
 
 ---
 
@@ -50,7 +48,21 @@ Built for university placement coordinators to maintain total governance:
 | **UI Components** | Shadcn UI (Radix Primitives) |
 | **Animations** | Framer Motion |
 | **Data Viz** | Recharts |
+| **Auth & Database** | Firebase Authentication + Firestore |
+| **File Storage** | Supabase Storage |
 | **Icons** | Lucide React |
+
+> Hireque is a frontend application that talks to Firebase and Supabase directly via their client SDKs — there is currently no custom backend server (no Express/Node API layer).
+
+---
+
+## 🔐 How Roles & Access Work
+
+- Each user has a `role` field (`student` / `recruiter` / `admin`) stored in their Firestore `users` document.
+- `AuthProvider` subscribes to that document in real time, so role changes reflect instantly across the app.
+- `RequireAuth` and `RequireRole` are React Router guards that redirect users away from routes that don't match their role.
+
+**Known limitation:** route guards are enforced on the client. They control navigation/UX, not data access — a request made directly to the Firebase/Supabase APIs (bypassing the React app) is not currently blocked by them. Locking this down properly requires Firestore Security Rules and Supabase Storage policies scoped to each role. This is the most important item on the roadmap below.
 
 ---
 
@@ -73,27 +85,31 @@ You need Node.js `(>=18.x.x)` installed on your system.
    npm install
    ```
 
-3. **Run the development server:**
+3. **Set up environment variables:**
+   Copy `.env.example` to `.env` and fill in your Firebase and Supabase project credentials.
+
+4. **Run the development server:**
    ```bash
    npm run dev
    ```
 
-4. **Open your browser:**
+5. **Open your browser:**
    Navigate to `http://localhost:8080` (or the port specified by Vite) to view the application.
 
 ---
 
 ## 🎨 Design Philosophy
 
-Hireque defies traditional, utilitarian B2B portal layouts. By utilizing a "Paris Chic" editorial aesthetic, it embraces deep, sophisticated primary tones (Forest Green `#193c28`) paired with soft, luxurious backgrounds (Muted Beige). Component architectures are designed with modern micro-animations, glassmorphism hints, and dynamic floating elements to provide a world-class user experience.
+Hireque defies traditional, utilitarian B2B portal layouts. By utilizing a "Paris Chic" editorial aesthetic, it embraces deep, sophisticated primary tones (Forest Green `#193c28`) paired with soft, luxurious backgrounds (Muted Beige). Component architectures use modern micro-animations, glassmorphism hints, and dynamic floating elements.
 
 ---
 
-## 🚧 Upcoming Features
+## 🚧 Roadmap
 
-- [ ] **Backend Integration:** Full persistence migration to Firebase/Supabase Auth & Firestore.
-- [ ] **Live AI Parsing:** Activating direct OpenAI/Gemini integration for real, rather than simulated, ATS resume parsing.
-- [ ] **Automated Alerts:** EmailJS workflows for automated Interview scheduling dispatch.
+- [ ] **Lock down data access:** Firestore Security Rules + Supabase Storage policies enforced server-side per role (currently only client-side route guards).
+- [ ] **Real AI matching/parsing:** Replace rule-based eligibility filtering and placeholder resume scoring with actual ML-based matching and ATS parsing (e.g. OpenAI/Gemini integration).
+- [ ] **Live data everywhere:** Extend the real-time listener pattern (currently only on user profiles) to job postings, applications, and interviews.
+- [ ] **Automated Alerts:** EmailJS workflows for interview scheduling notifications.
 
 ---
 
